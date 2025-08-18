@@ -1,0 +1,539 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>TBC Networks Map</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+  <style>
+    html, body { height: 100%; margin: 0; }
+    #map { height: 100%; }
+
+    /* Title */
+    .map-title {
+      position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+      z-index: 1000;
+      font: 40px/1.2 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      font-weight: 800; color: #111; text-align: center;
+      background: rgba(255,255,255,0.9);
+      padding: 14px 25px; border-radius: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      pointer-events: none;
+    }
+
+    .leaflet-interactive { cursor: pointer; }
+
+    /* ===========================
+       Legend
+       - Desktop: left panel
+       - Mobile: left side sheet (button toggled only)
+       =========================== */
+    .legend-panel {
+      position: absolute;
+      top: 70px; left: 10px;
+      width: 300px; max-height: calc(100% - 90px);
+      overflow-y: auto;               /* ensure scrolling */
+      z-index: 1000;
+      background: rgba(255,255,255,0.95);
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(0,0,0,.12);
+      padding: 10px;
+      font: 13px/1.35 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+
+      /* Improve scroll behavior across devices */
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;   /* don't bubble to body/map */
+      touch-action: pan-y;            /* allow vertical panning */
+    }
+
+    /* IMPORTANT: keep header hidden on desktop */
+    .legend-header { display: none; }  /* ← was 'display: false' before */
+
+    .legend-title { font-weight: 700; font-size: 14px; margin: 4px 0 8px; color: #111; }
+
+    /* County groups (accordion) */
+    .county-group { margin-bottom: 6px; border-radius: 8px; }
+    .county-group summary {
+      list-style: none; cursor: pointer;
+      padding: 8px 10px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      background: #f8fafc; border: 1px solid #e5e7eb; position: sticky; top: 0;
+    }
+    .county-name { font-weight: 600; color: #111; }
+    .county-count { font-size: 12px; color: #374151; background: #e5e7eb; border-radius: 999px; padding: 2px 8px; }
+    .county-group[open] summary { background: #eef2ff; }
+
+    .legend-list { list-style: none; padding: 6px 0 0; margin: 0; position: relative; }
+    .legend-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 6px 8px; border-radius: 8px; cursor: pointer;
+    }
+    .legend-item:hover { background: #f3f4f6; }
+    .swatch {
+      width: 16px; height: 16px; border-radius: 4px;
+      border: 1px solid rgba(0,0,0,.15); flex: 0 0 16px;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.25);
+    }
+    .legend-name { color: #111; }
+
+    /* Legend popup (same visual language as map card) */
+    .legend-popup {
+      position: absolute; left: 8px; right: 8px; z-index: 5;
+      background: #fff; color: #111; border: 1px solid #e5e7eb;
+      border-radius: 10px; box-shadow: 0 4px 14px rgba(0,0,0,.12);
+      padding: 10px 12px 12px;
+    }
+    .legend-popup .close {
+      position: absolute; top: 6px; right: 8px;
+      border: none; background: transparent; font-size: 16px;
+      line-height: 1; cursor: pointer; color: #6b7280;
+    }
+    .legend-popup .close:hover { color: #111; }
+
+    /* Mobile FAB to open legend */
+    .legend-toggle { display: none; }
+
+    /* ---------------------------
+       Mobile styles (<768px)
+       --------------------------- */
+    @media (max-width: 767.98px) {
+      /* Smaller title on mobile */
+      .map-title {
+        font-size: 22px;
+        padding: 10px 16px;
+        border-radius: 14px;
+      }
+
+      /* Left side sheet (half screen) */
+      .legend-panel {
+        position: fixed;
+        top: 0; bottom: 0; left: 0; right: auto;
+        width: 50vw;                /* half screen */
+        max-width: none;
+        height: 100vh;
+        border-radius: 0 12px 12px 0;
+        padding: 8px 10px 12px;
+        transform: translateX(-100%);   /* fully hidden by default */
+        transition: transform 220ms ease;
+        border-left: 0;              /* flush to edge */
+        border-right: 1px solid #e5e7eb;
+        box-shadow: 0 4px 16px rgba(0,0,0,.12);
+        background: rgba(255,255,255,0.98);
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain; /* prevent scroll chaining */
+        touch-action: pan-y;          /* allow vertical scroll */
+      }
+      .legend-panel.open { transform: translateX(0); }
+
+      /* Show header & Close button only on mobile */
+      .legend-header {
+        display: flex;
+        align-items: center; justify-content: space-between;
+        gap: 8px; padding: 6px 2px 8px; position: sticky; top: 0;
+        background: rgba(255,255,255,0.98); z-index: 2;
+      }
+      .legend-grabber {
+        width: 40px; height: 4px; border-radius: 2px;
+        background: #cbd5e1; margin: 4px auto 8px auto;
+      }
+      .legend-title { margin: 0 0 8px; }
+      .legend-close-btn {
+        border: none; background: #f3f4f6; color: #111;
+        border-radius: 8px; padding: 6px 10px; font-size: 12px; cursor: pointer;
+      }
+      .legend-close-btn:active { transform: translateY(1px); }
+
+      /* Hide desktop duplicate title */
+      .desktop-only { display: none; }
+
+      /* Mobile FAB to open/close — bottom-left */
+      .legend-toggle {
+        display: inline-flex; align-items: center; justify-content: center;
+        position: fixed; left: 12px; bottom: 12px; z-index: 1001;
+        background: #111; color: #fff; border: 0;
+        border-radius: 999px; padding: 10px 14px; font: 14px/1 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+        box-shadow: 0 6px 18px rgba(0,0,0,.2);
+      }
+      .legend-toggle:active { transform: translateY(1px); }
+
+      /* Hide Leaflet +/- zoom on mobile */
+      .leaflet-control-zoom { display: none !important; }
+    }
+
+    /* Shared popup content */
+    .tip { font: 13px/1.35 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+    .tip .label { color:#666; }
+    .tip-name { font-size: 15px; font-weight: 600; margin-bottom: 2px; color: #111; }
+
+    /* Permanent polygon labels on map */
+    .poly-label {
+      background: transparent; border: 0; box-shadow: none;
+      color: #1f2937;
+      font: 13px/1.2 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      text-align: center; white-space: nowrap; line-height: 1.15;
+      text-shadow: 0 1px 2px rgba(255,255,255,.85), 0 0 2px rgba(255,255,255,.9);
+      pointer-events: none;
+    }
+
+    /* Map hover tooltip */
+    .leaflet-tooltip.hover-tip {
+      background: #fff; color: #111;
+      border: 1px solid #e5e7eb; border-radius: 10px;
+      box-shadow: 0 4px 14px rgba(0,0,0,.12);
+      padding: 8px 10px;
+    }
+    .leaflet-tooltip.hover-tip:before { display: none; }
+
+    /* Photo grid */
+    .gallery {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 8px; margin-top: 8px;
+    }
+    .gallery a { display:block; border-radius:8px; overflow:hidden; box-shadow: 0 1px 4px rgba(0,0,0,.12); }
+    .gallery img { display:block; width:100%; height:100%; object-fit: cover; aspect-ratio: 4 / 3; }
+    hr { border:0; border-top:1px solid #e9ecef; margin:8px 0; }
+
+    /* Layer control headings */
+    .leaflet-control-layers .basemap-heading,
+    .leaflet-control-layers .overlays-heading {
+      font-weight: 600; margin-bottom: 4px; display: block;
+    }
+  </style>
+</head>
+<body>
+  <div id="map">
+    <div class="map-title">TBC Networks</div>
+
+    <!-- Mobile FAB to open legend -->
+    <button id="legendToggle" class="legend-toggle" type="button" aria-expanded="false" aria-controls="legendPanel">
+      Legend
+    </button>
+
+    <!-- Legend panel (desktop left panel / mobile left side sheet) -->
+    <aside class="legend-panel" id="legendPanel" aria-label="Networks legend">
+      <!-- Mobile-only header -->
+      <div class="legend-header">
+        <div class="legend-grabber" aria-hidden="true"></div>
+        <div class="legend-title">Networks by County</div>
+        <button class="legend-close-btn" type="button" id="legendClose">Close</button>
+      </div>
+
+      <!-- Desktop title -->
+      <div class="legend-title desktop-only">Networks by County</div>
+
+      <div id="legendGroups"></div>
+    </aside>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script>
+    // --- Map ---
+    const map = L.map('map', { center: [37.8, -122.3], zoom: 9, preferCanvas: true });
+
+    // --- Basemaps (your four, relabeled) ---
+    const esriGray = L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+      { maxZoom: 20, attribution: 'Tiles &copy; Esri' }
+    ).addTo(map); // default
+    const cartoPositron = L.tileLayer(
+      'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+      { maxZoom: 20, subdomains: 'abcd', attribution: '&copy; OpenStreetMap contributors &copy; CARTO' }
+    );
+    const esriWorldStreet = L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+      { maxZoom: 20, attribution: 'Tiles &copy; Esri' }
+    );
+    const esriTopo = L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
+      { maxZoom: 20, attribution: 'Tiles &copy; Esri' }
+    );
+    const baseMaps = { 'Light': esriGray, 'Medium': cartoPositron, 'Street': esriWorldStreet, 'Topo': esriTopo };
+
+    // --- Overlays ---
+    const networksGroup = L.layerGroup().addTo(map);
+    const countiesGroup = L.layerGroup().addTo(map);
+
+    const layerControl = L.control.layers(baseMaps, { 'Networks': networksGroup, 'Counties': countiesGroup }, { position: 'topright', collapsed: false }).addTo(map);
+    const controlEl = layerControl.getContainer();
+    const baseList = controlEl.querySelector('.leaflet-control-layers-base');
+    if (baseList) { const h = document.createElement('div'); h.className = 'basemap-heading'; h.textContent = 'Basemap'; baseList.prepend(h); }
+    const overlayList = controlEl.querySelector('.leaflet-control-layers-overlays');
+    if (overlayList) { const h = document.createElement('div'); h.className = 'overlays-heading'; h.textContent = 'Layers'; overlayList.prepend(h); }
+
+    // --- Networks helpers ---
+    const palette30 = [
+      '#1f77b4','#ff7f0e','#2ca02c','#d62728','#9467bd',
+      '#8c564b','#e377c2','#7f7f7f','#bcbd22','#17becf',
+      '#393b79','#637939','#8c6d31','#843c39','#7b4173',
+      '#3182bd','#31a354','#756bb1','#636363','#e6550d',
+      '#9edae5','#c7c7c7','#bc80bd','#ffed6f','#a6cee3',
+      '#b2df8a','#fb9a99','#fdbf6f','#cab2d6','#6a3d9a'
+    ];
+    function hashIndex(str, m) { let h = 0; for (let i=0;i<str.length;i++) h = (h*31 + str.charCodeAt(i))|0; return Math.abs(h)%m; }
+    function colorForFeature(ft) {
+      const p = ft.properties || {};
+      const key = String(p.id || p.name || JSON.stringify(ft.geometry) || Math.random());
+      return palette30[hashIndex(key, palette30.length)];
+    }
+    function styleNetworks(ft) { return { color: '#333', weight: 1.5, fillColor: colorForFeature(ft), fillOpacity: 0.5 }; }
+    function highlight(e){ e.target.setStyle({ weight: 3, color:'#000', fillOpacity: 0.7 }); }
+    function resetHighlight(e){ networksGeoJson && networksGeoJson.resetStyle(e.target); }
+    function cleanedName(name){ if (!name || typeof name !== 'string') return 'Unnamed'; return name.replace(/\bnetworks?\b/gi,'').replace(/\s+/g,' ').trim() || 'Unnamed'; }
+    function multilineName(name){ return cleanedName(name).split(/\s+/).filter(Boolean).join('<br>'); }
+    function allPhotos(props = []){ return [props.photo1,props.photo2,props.photo3,props.photo4,props.photo5,props.photo6].filter(u => typeof u === 'string' && u.trim()); }
+    function renderGallery(photos){
+      if (!photos.length) return '';
+      const items = photos.map((p, i) =>
+        '<a href="' + p + '" target="_blank" rel="noopener">' +
+          '<img src="' + p + '" alt="Photo ' + (i+1) + '" loading="lazy" />' +
+        '</a>'
+      ).join('');
+      return '<hr/><div class="gallery">' + items + '</div>';
+    }
+    function infoCardHtml(props = {}){
+      const name = cleanedName(props.name);
+      const email = props.contact_email
+        ? '<div><span class="label">Email:</span> <a href="mailto:' + props.contact_email + '">' + props.contact_email + '</a></div>'
+        : '';
+      const photos = allPhotos(props);
+      return (
+        '<div class="tip">' +
+          '<div class="tip-name">' + name + '</div>' +
+          '<div><span class="label">Leaders:</span> ' + (props.leaders ?? '—') + '</div>' +
+          email +
+          renderGallery(photos) +
+        '</div>'
+      );
+    }
+
+    // Legend state & helpers
+    const legendPanel = document.getElementById('legendPanel');
+    const legendGroupsEl = document.getElementById('legendGroups');
+    const legendToggle = document.getElementById('legendToggle');
+    const legendClose = document.getElementById('legendClose');
+    let legendPopupEl = null;
+    let legendPopupAnchorEl = null;
+
+    function isMobile() { return window.matchMedia('(max-width: 767.98px)').matches; }
+
+    // Stop map from stealing legend scroll/click (critical fix)
+    L.DomEvent.disableScrollPropagation(legendPanel);
+    L.DomEvent.disableClickPropagation(legendPanel);
+
+    // Background scroll locking when legend is open (mobile)
+    let scrollLockY = 0;
+    function lockScroll() {
+      scrollLockY = window.scrollY || document.documentElement.scrollTop || 0;
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollLockY}px`;
+      document.body.style.left = '0';
+      document.body.style.right = '0';
+      document.body.style.width = '100%';
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+    }
+    function unlockScroll() {
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.left = '';
+      document.body.style.right = '';
+      document.body.style.width = '';
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+      window.scrollTo(0, scrollLockY);
+    }
+
+    // Button-toggled side sheet: fully hidden when closed
+    function openLegend() {
+      legendPanel.classList.add('open');
+      if (legendToggle) legendToggle.setAttribute('aria-expanded', 'true');
+      if (isMobile()) lockScroll();
+    }
+    function closeLegend() {
+      legendPanel.classList.remove('open');
+      if (legendToggle) legendToggle.setAttribute('aria-expanded', 'false');
+      if (isMobile()) unlockScroll();
+    }
+
+    // Button toggles
+    if (legendToggle) legendToggle.addEventListener('click', () => {
+      const isOpen = legendPanel.classList.contains('open');
+      isOpen ? closeLegend() : openLegend();
+    });
+    if (legendClose) legendClose.addEventListener('click', closeLegend);
+
+    // Reposition legend popup (used both desktop and mobile)
+    function repositionLegendPopup() {
+      if (!legendPopupEl || !legendPopupAnchorEl) return;
+      const panelRect = legendPanel.getBoundingClientRect();
+      const aRect = legendPopupAnchorEl.getBoundingClientRect();
+      const relativeTop = (aRect.top - panelRect.top) + legendPanel.scrollTop + anchorEl.offsetHeight + 6;
+      legendPopupEl.style.top = relativeTop + 'px';
+    }
+    legendPanel.addEventListener('scroll', repositionLegendPopup);
+    window.addEventListener('resize', repositionLegendPopup);
+
+    function showLegendPopup(anchorEl, html) {
+      if (legendPopupEl) legendPopupEl.remove();
+      const el = document.createElement('div');
+      el.className = 'legend-popup';
+      el.innerHTML = '<button class="close" aria-label="Close legend popup">&times;</button>' + html;
+      legendPanel.appendChild(el);
+
+      // Position below the anchor list item
+      const panelRect = legendPanel.getBoundingClientRect();
+      const aRect = anchorEl.getBoundingClientRect();
+      const relativeTop = (aRect.top - panelRect.top) + legendPanel.scrollTop + anchorEl.offsetHeight + 6;
+      el.style.top = relativeTop + 'px';
+
+      el.querySelector('.close').addEventListener('click', () => {
+        el.remove(); legendPopupEl = null; legendPopupAnchorEl = null;
+      });
+
+      legendPopupEl = el;
+      legendPopupAnchorEl = anchorEl;
+
+      // Ensure sheet is open on mobile when showing popup
+      if (isMobile()) openLegend();
+    }
+
+    // --- Load Networks & build county-grouped legend ---
+    let networksGeoJson;
+    fetch('https://tbc-networks.onrender.com/networks.geojson', { cache: 'no-cache' })
+      .then(res => res.json())
+      .then(data => {
+        const groups = new Map(); // countyName -> array of items
+
+        networksGeoJson = L.geoJSON(data, {
+          style: styleNetworks,
+          onEachFeature: (feature, layer) => {
+            // Permanent stacked label on map
+            layer.bindTooltip(multilineName(feature.properties?.name), {
+              permanent: true, direction: 'center', className: 'poly-label', opacity: 1
+            });
+
+            // Map hover card
+            layer.on('mouseover', (e) => {
+              highlight(e);
+              const tip = L.tooltip({ className: 'hover-tip', direction: 'top', opacity: 0.95, offset: [0,-8] })
+                .setContent(infoCardHtml(feature.properties))
+                .setLatLng(e.latlng);
+              layer._hoverTip = tip; tip.addTo(map);
+            });
+            layer.on('mousemove', (e) => { if (layer._hoverTip) layer._hoverTip.setLatLng(e.latlng); });
+            layer.on('mouseout', (e) => {
+              resetHighlight(e);
+              if (layer._hoverTip) { map.removeLayer(layer._hoverTip); layer._hoverTip = null; }
+            });
+
+            // Map click popup
+            layer.on('click', () => {
+              layer.bindPopup(infoCardHtml(feature.properties), { maxWidth: 480 }).openPopup();
+            });
+
+            // County grouping
+            const props = feature.properties || {};
+            const county =
+              (props.County && String(props.County).trim()) ||
+              (props.county && String(props.county).trim()) ||
+              'Unspecified';
+
+            const name = cleanedName(props.name || 'Unnamed');
+            const item = {
+              name,
+              color: colorForFeature(feature),
+              props,
+              layer
+            };
+            if (!groups.has(county)) groups.set(county, []);
+            groups.get(county).push(item);
+          }
+        }).addTo(networksGroup);
+
+        // Fit to networks
+        const b = networksGeoJson.getBounds();
+        if (b.isValid()) map.fitBounds(b.pad(0.05));
+
+        // Build grouped legend UI
+        buildCountyLegend(groups);
+      });
+
+    function buildCountyLegend(groups) {
+      // Sort counties A→Z (Unspecified last)
+      const counties = Array.from(groups.keys());
+      counties.sort((a, b) => {
+        if (a === 'Unspecified' && b !== 'Unspecified') return 1;
+        if (b === 'Unspecified' && a !== 'Unspecified') return -1;
+        return a.localeCompare(b, undefined, { sensitivity: 'base' });
+      });
+
+      const legendGroupsEl = document.getElementById('legendGroups');
+      legendGroupsEl.innerHTML = '';
+      counties.forEach((county) => {
+        // Sort networks A→Z within county
+        const items = groups.get(county).slice().sort((a, b) =>
+          a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
+        );
+
+        const details = document.createElement('details');
+        details.className = 'county-group';
+        // Start with ALL counties collapsed
+
+        const summary = document.createElement('summary');
+        const nameEl = document.createElement('span'); nameEl.className = 'county-name'; nameEl.textContent = county;
+        const countEl = document.createElement('span'); countEl.className = 'county-count'; countEl.textContent = items.length;
+        summary.appendChild(nameEl); summary.appendChild(countEl);
+
+        const ul = document.createElement('ul');
+        ul.className = 'legend-list';
+
+        items.forEach((item) => {
+          const li = document.createElement('li');
+          li.className = 'legend-item';
+
+          const swatch = document.createElement('span');
+          swatch.className = 'swatch';
+          swatch.style.background = item.color;
+
+          const label = document.createElement('span');
+          label.className = 'legend-name';
+          label.innerHTML = item.name;
+
+          li.appendChild(swatch);
+          li.appendChild(label);
+          ul.appendChild(li);
+
+          // Click: open popup card under this li (no map zoom)
+          li.addEventListener('click', (e) => {
+            e.stopPropagation(); // don't toggle <details>
+            const html = infoCardHtml(item.props);
+            showLegendPopup(li, html);
+          });
+        });
+
+        details.appendChild(summary);
+        details.appendChild(ul);
+        legendGroupsEl.appendChild(details);
+
+        // Maintain popup position when expanding/collapsing
+        details.addEventListener('toggle', () => setTimeout(repositionLegendPopup, 0));
+      });
+    }
+
+    // --- Counties layer (light yellow) ---
+    function styleCounties(){ return { color:'#b59f3b', weight:1, fillColor:'#fff9c4', fillOpacity:0.5 }; }
+    fetch('https://pastorplt.github.io/tbc_map/tbc_counties.geojson', { cache: 'no-cache' })
+      .then(res => res.json())
+      .then(data => {
+        const counties = L.geoJSON(data, { style: styleCounties }).addTo(countiesGroup);
+        const b = counties.getBounds();
+        if (b.isValid()) {
+          const current = map.getBounds();
+          const union = current.isValid() ? current.extend(b) : b;
+          map.fitBounds(union.pad(0.05));
+        }
+      });
+  </script>
+</body>
+</html>
