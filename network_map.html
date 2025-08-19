@@ -7,11 +7,65 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
   <style>
     html, body { height: 100%; margin: 0; }
-    #map { height: 100%; }
+
+    /* Leave room for the persistent header (60px) */
+    #map { height: calc(100% - 60px); }
+
+    /* ===== Header / Nav ===== */
+    header {
+      background-color: #bf3426; /* brand color */
+      color: #fff;
+    }
+    .nav {
+      height: 60px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 0 16px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .nav .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: #fff;
+      font-weight: 800;
+      letter-spacing: 0.3px;
+    }
+    .nav .brand img {
+      height: 36px; width: auto;
+      display: block;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      margin-left: auto;
+    }
+    .nav-links a {
+      color: #fff;
+      text-decoration: none;
+      font-weight: 700;
+      padding: 6px 4px;
+      border-radius: 4px;
+      opacity: 0.9;
+    }
+    .nav-links a:hover { text-decoration: underline; opacity: 1; }
+    .nav-links a.active {
+      text-decoration: underline;
+      opacity: 1;
+    }
+
+    /* Force nav font consistency across all pages */
+    .nav, .nav a, .nav .brand {
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif !important;
+    }
 
     /* Title */
     .map-title {
-      position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+      position: absolute; top: 70px; left: 50%; transform: translateX(-50%);
       z-index: 1000;
       font: 40px/1.2 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
       font-weight: 800; color: #111; text-align: center;
@@ -48,7 +102,7 @@
     }
 
     /* IMPORTANT: keep header hidden on desktop */
-    .legend-header { display: none; }  /* ← was 'display: false' before */
+    .legend-header { display: none; }
 
     .legend-title { font-weight: 700; font-size: 14px; margin: 4px 0 8px; color: #111; }
 
@@ -202,6 +256,20 @@
   </style>
 </head>
 <body>
+  <!-- Persistent header / nav -->
+  <header>
+    <div class="nav">
+      <a class="brand" href="index.html" aria-label="TBC City Home">
+        <img src="TBC_full_logo_white.png" alt="TBC logo">
+      </a>
+      <nav class="nav-links" aria-label="Primary navigation">
+  <a href="index.html" class="active" aria-current="page">Home</a>
+  <a href="network_map.html">TBC Networks</a>
+  <a href="touchpoint.html">TBC Touchpoint</a>
+</nav>
+    </div>
+  </header>
+
   <div id="map">
     <div class="map-title">TBC Networks</div>
 
@@ -368,7 +436,7 @@
       if (!legendPopupEl || !legendPopupAnchorEl) return;
       const panelRect = legendPanel.getBoundingClientRect();
       const aRect = legendPopupAnchorEl.getBoundingClientRect();
-      const relativeTop = (aRect.top - panelRect.top) + legendPanel.scrollTop + anchorEl.offsetHeight + 6;
+      const relativeTop = (aRect.top - panelRect.top) + legendPanel.scrollTop + legendPopupAnchorEl.offsetHeight + 6;
       legendPopupEl.style.top = relativeTop + 'px';
     }
     legendPanel.addEventListener('scroll', repositionLegendPopup);
