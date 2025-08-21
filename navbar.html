@@ -1,0 +1,154 @@
+<!-- navbar.html -->
+<header class="navbar">
+  <div class="nav">
+    <a href="index.html" aria-label="TBC Home" class="brand">
+      <span class="logo-wrap">
+        <img src="TBC_full_logo.gif" alt="TBC logo">
+      </span>
+    </a>
+
+    <!-- Hamburger (mobile) -->
+    <button class="hamburger" type="button" aria-label="Open menu" aria-controls="navMenu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+
+    <ul class="nav-links" id="navMenu">
+      <li><a href="network_map.html">Map</a></li>
+      <li><a href="touchpoint.html">Touchpoint</a></li>
+
+      <li class="dropdown">
+        <button class="dropdown-toggle" type="button" aria-haspopup="true" aria-expanded="false">View ▾</button>
+        <ul class="dropdown-content" role="menu" aria-label="View submenu">
+          <li><a href="organizations.html" role="menuitem">Organizations</a></li>
+          <li><a href="leaders.html" role="menuitem">Leaders</a></li>
+          <li><a href="networks.html" role="menuitem">Networks</a></li>
+        </ul>
+      </li>
+    </ul>
+  </div>
+</header>
+
+<style>
+  :root { --brand: #bf3426; --brand-darker: #a22a1f; }
+  /* Full-width bar */
+  .navbar { background: var(--brand); width: 100%; }
+
+  /* Centered row */
+  .nav {
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    padding: 8px 16px; max-width: 1200px; margin: 0 auto;
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  }
+
+  /* Logo badge */
+  .brand { display: inline-flex; align-items: center; text-decoration: none; }
+  .logo-wrap { background:#000; padding:4px; border-radius:6px; display:inline-flex; align-items:center; justify-content:center; }
+  .brand img { height: 36px; width: auto; display: block; }
+
+  /* Links row (desktop) */
+  .nav-links {
+    list-style: none; display: flex; align-items: center; gap: 6px;
+    margin: 0; padding: 0;
+  }
+  .nav-links > li { position: relative; }
+  .nav-links a, .nav-links .dropdown-toggle {
+    color: #fff; text-decoration: none; font-weight: 700;
+    padding: 8px 12px; border-radius: 4px; display: block; opacity: .95;
+    background: none; border: 0; cursor: pointer; font: inherit;
+  }
+  .nav-links a:hover, .nav-links .dropdown-toggle:hover { background: var(--brand-darker); opacity: 1; }
+  .nav-links a.active { background: var(--brand-darker); opacity: 1; }
+
+  /* Dropdown: align to right so it never clips */
+  .dropdown .dropdown-content {
+    display: none; position: absolute; top: 100%; right: 0; left: auto;
+    background: var(--brand); min-width: 180px; margin-top: 2px;
+    border-radius: 8px; box-shadow: 0 6px 18px rgba(0,0,0,.15); z-index: 1000;
+    padding: 6px 4px;
+
+    /* 🔥 bullet fix */
+    list-style: none;
+  }
+  .dropdown .dropdown-content li {
+    list-style: none; margin: 0; padding: 0;
+  }
+  .dropdown.open .dropdown-content { display: block; }
+  .dropdown-content a { border-radius: 6px; }
+  .dropdown-content a:hover { background: var(--brand-darker); }
+
+  /* Hamburger */
+  .hamburger {
+    display: none; width: 40px; height: 36px; border: 0; background: transparent; cursor: pointer;
+  }
+  .hamburger span {
+    display:block; height:3px; margin:6px 0; background:#fff; border-radius:2px;
+  }
+
+  /* Mobile layout */
+  @media (max-width: 720px) {
+    .hamburger { display: inline-block; }
+    .nav { padding: 8px 10px; }
+    .nav-links {
+      position: absolute; left: 0; right: 0; top: 60px;
+      flex-direction: column; align-items: stretch; gap: 4px;
+      background: var(--brand); padding: 8px; display: none;
+      border-top: 1px solid rgba(255,255,255,.15);
+    }
+    .nav-links.open { display: flex; }
+    .nav-links a, .nav-links .dropdown-toggle { padding: 10px 12px; }
+
+    /* Dropdown becomes inline (stacked) in the mobile sheet */
+    .dropdown .dropdown-content {
+      position: static; display: none; box-shadow: none; margin-top: 0; padding: 4px 0;
+      background: transparent;
+    }
+    .dropdown.open .dropdown-content { display: block; }
+    .dropdown-content a { padding-left: 20px; }
+  }
+</style>
+
+<script>
+  (function(){
+    const nav = document.querySelector('.nav');
+    const burger = nav.querySelector('.hamburger');
+    const menu = nav.querySelector('#navMenu');
+    const dropdown = nav.querySelector('.dropdown');
+    const toggle = dropdown?.querySelector('.dropdown-toggle');
+
+    // Hamburger toggle
+    function closeMenu(){ menu.classList.remove('open'); burger.setAttribute('aria-expanded','false'); }
+    function openMenu(){ menu.classList.add('open'); burger.setAttribute('aria-expanded','true'); }
+    burger.addEventListener('click', function(){
+      const isOpen = menu.classList.contains('open'); isOpen ? closeMenu() : openMenu();
+    });
+
+    // Dropdown toggle
+    function closeDropdown(){ dropdown.classList.remove('open'); toggle.setAttribute('aria-expanded','false'); }
+    function openDropdown(){ dropdown.classList.add('open'); toggle.setAttribute('aria-expanded','true'); }
+    toggle.addEventListener('click', function(e){
+      e.stopPropagation();
+      const isOpen = dropdown.classList.contains('open'); isOpen ? closeDropdown() : openDropdown();
+    });
+
+    // Click outside to close
+    document.addEventListener('click', function(e){
+      if (!nav.contains(e.target)) { closeDropdown(); closeMenu(); }
+    });
+
+    // ESC to close
+    document.addEventListener('keydown', function(e){
+      if (e.key === 'Escape') { closeDropdown(); closeMenu(); }
+    });
+
+    // Reset when resizing
+    let lastWide = window.innerWidth > 720;
+    window.addEventListener('resize', function(){
+      const wide = window.innerWidth > 720;
+      if (wide !== lastWide) {
+        closeMenu();
+        closeDropdown();
+        lastWide = wide;
+      }
+    });
+  })();
+</script>
