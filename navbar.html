@@ -14,7 +14,7 @@
 
     <ul class="nav-links" id="navMenu">
       <li><a href="network_map.html">Map</a></li>
-      <li><a href="disaster_data.html">Disaster Data</a></li> <!-- NEW LINK -->
+      <li><a href="disaster_data.html">Disaster Data</a></li>
       <li><a href="touchpoint.html">Touchpoint</a></li>
 
       <li class="dropdown">
@@ -23,6 +23,15 @@
           <li><a href="organizations.html" role="menuitem">Organizations</a></li>
           <li><a href="leaders.html" role="menuitem">Leaders</a></li>
           <li><a href="networks.html" role="menuitem">Networks</a></li>
+        </ul>
+      </li>
+
+      <!-- Admin dropdown with direct POST actions -->
+      <li class="dropdown">
+        <button class="dropdown-toggle" type="button" aria-haspopup="true" aria-expanded="false">Admin ▾</button>
+        <ul class="dropdown-content" role="menu" aria-label="Admin submenu">
+          <li><a href="#" id="regenNetworks" role="menuitem">Regen Networks</a></li>
+          <li><a href="#" id="regenDisaster" role="menuitem">Regen Disaster</a></li>
         </ul>
       </li>
     </ul>
@@ -63,27 +72,32 @@
   /* Dropdown: align to right so it never clips */
   .dropdown .dropdown-content {
     display: none; position: absolute; top: 100%; right: 0; left: auto;
-    background: var(--brand); min-width: 180px; margin-top: 2px;
+    background: var(--brand); min-width: 200px; margin-top: 2px;
     border-radius: 8px; box-shadow: 0 6px 18px rgba(0,0,0,.15); z-index: 1000;
     padding: 6px 4px;
-
-    /* 🔥 bullet fix */
-    list-style: none;
+    list-style: none; /* bullet fix */
   }
-  .dropdown .dropdown-content li {
-    list-style: none; margin: 0; padding: 0;
-  }
+  .dropdown .dropdown-content li { list-style: none; margin: 0; padding: 0; }
   .dropdown.open .dropdown-content { display: block; }
   .dropdown-content a { border-radius: 6px; }
   .dropdown-content a:hover { background: var(--brand-darker); }
+
+  /* Toast (result messages) */
+  .toast {
+    position: fixed; top: 12px; right: 12px; z-index: 2000;
+    background: #111; color: #fff; padding: 10px 14px; border-radius: 10px;
+    box-shadow: 0 6px 18px rgba(0,0,0,.2); font-size: 13px;
+    opacity: 0; transform: translateY(-8px); pointer-events: none; transition: .2s ease;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast.success { background: #15803d; }
+  .toast.error   { background: #b91c1c; }
 
   /* Hamburger */
   .hamburger {
     display: none; width: 40px; height: 36px; border: 0; background: transparent; cursor: pointer;
   }
-  .hamburger span {
-    display:block; height:3px; margin:6px 0; background:#fff; border-radius:2px;
-  }
+  .hamburger span { display:block; height:3px; margin:6px 0; background:#fff; border-radius:2px; }
 
   /* Mobile layout */
   @media (max-width: 720px) {
@@ -110,11 +124,19 @@
 
 <script>
   (function(){
+    // === Cloudflare Worker endpoints (Bearer auth) ===
+    // Matches your POST pattern:
+    // POST https://network-map.tbccities.workers.dev/admin/regenerate/...  with  Authorization: Bearer 2025
+    const ENDPOINT_NETWORKS = "https://network-map.tbccities.workers.dev/admin/regenerate/networks";
+    const ENDPOINT_DISASTER = "https://network-map.tbccities.workers.dev/admin/regenerate/disaster";
+    const SECRET_KEY = "2025";
+
     const nav = document.querySelector('.nav');
     const burger = nav.querySelector('.hamburger');
     const menu = nav.querySelector('#navMenu');
-    const dropdown = nav.querySelector('.dropdown');
-    const toggle = dropdown?.querySelector('.dropdown-toggle');
+    const dropdowns = nav.querySelectorAll('.dropdown');
+    const adminNetworks = document.getElementById('regenNetworks');
+    const adminDisaster = document.getElementById('regenDisaster');
 
     // Hamburger toggle
     function closeMenu(){ menu.classList.remove('open'); burger.setAttribute('aria-expanded','false'); }
@@ -123,22 +145,32 @@
       const isOpen = menu.classList.contains('open'); isOpen ? closeMenu() : openMenu();
     });
 
-    // Dropdown toggle
-    function closeDropdown(){ dropdown.classList.remove('open'); toggle.setAttribute('aria-expanded','false'); }
-    function openDropdown(){ dropdown.classList.add('open'); toggle.setAttribute('aria-expanded','true'); }
-    toggle.addEventListener('click', function(e){
-      e.stopPropagation();
-      const isOpen = dropdown.classList.contains('open'); isOpen ? closeDropdown() : openDropdown();
+    // Dropdown toggles (support multiple dropdowns)
+    dropdowns.forEach(function(dd){
+      const toggle = dd.querySelector('.dropdown-toggle');
+      function closeDropdown(){ dd.classList.remove('open'); toggle.setAttribute('aria-expanded','false'); }
+      function openDropdown(){ dd.classList.add('open'); toggle.setAttribute('aria-expanded','true'); }
+      toggle.addEventListener('click', function(e){
+        e.stopPropagation();
+        const isOpen = dd.classList.contains('open'); isOpen ? closeDropdown() : openDropdown();
+      });
+      dd._close = closeDropdown; // for external close
     });
 
-    // Click outside to close
+    // Click outside to close all
     document.addEventListener('click', function(e){
-      if (!nav.contains(e.target)) { closeDropdown(); closeMenu(); }
+      if (!nav.contains(e.target)) {
+        dropdowns.forEach(dd => dd._close && dd._close());
+        closeMenu();
+      }
     });
 
     // ESC to close
     document.addEventListener('keydown', function(e){
-      if (e.key === 'Escape') { closeDropdown(); closeMenu(); }
+      if (e.key === 'Escape') {
+        dropdowns.forEach(dd => dd._close && dd._close());
+        closeMenu();
+      }
     });
 
     // Reset when resizing
@@ -146,10 +178,62 @@
     window.addEventListener('resize', function(){
       const wide = window.innerWidth > 720;
       if (wide !== lastWide) {
+        dropdowns.forEach(dd => dd._close && dd._close());
         closeMenu();
-        closeDropdown();
         lastWide = wide;
       }
+    });
+
+    // ---- Toasts ----
+    function toast(msg, type){
+      let t = document.querySelector('.toast');
+      if (!t) { t = document.createElement('div'); t.className = 'toast'; document.body.appendChild(t); }
+      t.textContent = msg;
+      t.classList.remove('success','error');
+      if (type) t.classList.add(type);
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2600);
+    }
+
+    // ---- Call Cloudflare Worker (Authorization: Bearer 2025) ----
+    async function callRegen(endpoint, label, el){
+      try {
+        el?.setAttribute('aria-busy', 'true');
+        // Optional confirm (remove if not needed)
+        if (!confirm(`Run ${label}?`)) return;
+
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${SECRET_KEY}` }
+        });
+
+        const text = await res.text();
+        if (!res.ok) {
+          toast(`${label} failed: ${res.status} ${res.statusText}`, 'error');
+          console.error('Regen error:', res.status, text);
+        } else {
+          toast(`${label} started`, 'success');
+          console.log(label, text);
+        }
+      } catch (err) {
+        toast(`${label} error: ${err.message}`, 'error');
+        console.error(err);
+      } finally {
+        el?.removeAttribute('aria-busy');
+        dropdowns.forEach(dd => dd._close && dd._close());
+      }
+    }
+
+    // Wire up Admin actions
+    adminNetworks?.addEventListener('click', function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      callRegen(ENDPOINT_NETWORKS, 'Regen Networks', this);
+    });
+    adminDisaster?.addEventListener('click', function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      callRegen(ENDPOINT_DISASTER, 'Regen Disaster', this);
     });
   })();
 </script>
