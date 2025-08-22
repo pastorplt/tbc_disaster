@@ -17,16 +17,16 @@
     html, body {
       height: 100%;
       margin: 0;
-      /* Prevent the page from scrolling behind the map */
-      overflow: hidden;
+      overflow: hidden; /* keep page from scrolling behind the legend */
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
       background: #f6f7fb;
     }
     #map {
-      height: 100%;
-      width: 100%;
       position: absolute;
       inset: 0;
+      width: 100%;
+      height: 100vh; /* ensure full height even if ancestor sizing changes */
+      z-index: 1;
     }
 
     /* Panel (legend/filter) container */
@@ -39,7 +39,7 @@
       background: #fff;
       border-radius: 14px;
       box-shadow: 0 6px 22px rgba(0,0,0,0.15);
-      overflow: hidden; /* round corners */
+      overflow: hidden;
       display: flex;
       flex-direction: column;
       z-index: 1000; /* above the map */
@@ -65,7 +65,6 @@
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
       padding: 10px 12px 14px;
-      /* Make sure the scroll container actually can scroll */
       max-height: calc(100vh - 24px - 56px); /* panel max minus header */
     }
 
@@ -77,9 +76,7 @@
       margin-bottom: 10px;
       padding: 6px 8px;
     }
-    details[open] {
-      background: #f5f7ff;
-    }
+    details[open] { background: #f5f7ff; }
     summary {
       list-style: none;
       cursor: pointer;
@@ -94,12 +91,8 @@
       justify-content: space-between;
       gap: 12px;
     }
-    .chev {
-      transition: transform 0.2s ease;
-    }
-    details[open] .chev {
-      transform: rotate(90deg);
-    }
+    .chev { transition: transform 0.2s ease; }
+    details[open] .chev { transform: rotate(90deg); }
 
     .group-help {
       color: #555;
@@ -107,15 +100,12 @@
       margin: 6px 2px 8px;
     }
 
-    /* Tag checkbox rows */
     .tag-list {
       display: grid;
       grid-template-columns: 1fr;
       gap: 6px;
       margin-top: 8px;
     }
-
-    /* Tag pill style */
     .tag-pill {
       display: inline-flex;
       align-items: center;
@@ -156,89 +146,39 @@
       color: #fff;
     }
 
-    /* Popup content */
-    .popup {
-      font-size: 13px;
-      line-height: 1.35;
-      min-width: 240px;
-      max-width: 320px;
-    }
-    .popup h3 {
-      font-size: 15px;
-      margin: 0 0 6px;
-    }
-    .field-row {
-      margin: 4px 0;
-    }
-    .field-row b {
-      font-weight: 600;
-    }
-    .tag-strip {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      margin-top: 4px;
-    }
-    .chip {
-      display: inline-block;
-      padding: 3px 8px;
-      border-radius: 999px;
-      border: 1px solid #e1e5ee;
-      background: #f8fafc;
-      font-size: 12px;
-      line-height: 1;
-    }
+    /* Popup */
+    .popup { font-size: 13px; line-height: 1.35; min-width: 240px; max-width: 320px; }
+    .popup h3 { font-size: 15px; margin: 0 0 6px; }
+    .field-row { margin: 4px 0; }
+    .field-row b { font-weight: 600; }
+    .tag-strip { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+    .chip { display: inline-block; padding: 3px 8px; border-radius: 999px; border: 1px solid #e1e5ee; background: #f8fafc; font-size: 12px; line-height: 1; }
 
-    /* Mobile tweaks */
-    @media (max-width: 640px) {
-      .filter-panel {
-        width: calc(100vw - 24px);
-      }
-    }
+    @media (max-width: 640px) { .filter-panel { width: calc(100vw - 24px); } }
   </style>
 </head>
 <body>
   <div id="map"></div>
 
-  <!-- Scrollable, collapsible legend/filter panel -->
+  <!-- Legend/filter panel -->
   <aside class="filter-panel" id="filterPanel">
-    <div class="panel-header">
-      <h2>Legend & Filters</h2>
-    </div>
+    <div class="panel-header"><h2>Legend & Filters</h2></div>
 
     <div class="panel-scroll" id="panelScroll">
-      <!-- Regular Services -->
       <details id="grp-regular" open>
-        <summary>
-          <div class="summary-row">
-            <span>Regular Services</span>
-            <span class="chev">▶</span>
-          </div>
-        </summary>
+        <summary><div class="summary-row"><span>Regular Services</span><span class="chev">▶</span></div></summary>
         <div class="group-help">Select one or more to filter. If none are selected, this group is ignored.</div>
         <div class="tag-list" id="list-regular"></div>
       </details>
 
-      <!-- Disaster Services -->
       <details id="grp-disaster" open>
-        <summary>
-          <div class="summary-row">
-            <span>Disaster Services</span>
-            <span class="chev">▶</span>
-          </div>
-        </summary>
+        <summary><div class="summary-row"><span>Disaster Services</span><span class="chev">▶</span></div></summary>
         <div class="group-help">Select one or more to filter. If none are selected, this group is ignored.</div>
         <div class="tag-list" id="list-disaster"></div>
       </details>
 
-      <!-- Physical Resources -->
       <details id="grp-physical" open>
-        <summary>
-          <div class="summary-row">
-            <span>Physical Resources</span>
-            <span class="chev">▶</span>
-          </div>
-        </summary>
+        <summary><div class="summary-row"><span>Physical Resources</span><span class="chev">▶</span></div></summary>
         <div class="group-help">Select one or more to filter. If none are selected, this group is ignored.</div>
         <div class="tag-list" id="list-physical"></div>
       </details>
@@ -250,18 +190,21 @@
     </div>
   </aside>
 
-  <!-- Leaflet JS -->
+  <!-- Leaflet JS (correct integrity hash) -->
   <script
     src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    integrity="sha256-p4I6ZsHnNQbC2H6N9uBebquGsyhC2xZ8Jf+Q3G2GQ0A="
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
     crossorigin=""
   ></script>
 
   <script>
+    // Quick guard if Leaflet failed to load for any reason
+    if (typeof L === "undefined") {
+      console.error("Leaflet failed to load. Check the script tag or network.");
+    }
+
     // ====== CONFIG ======
     const GEOJSON_URL = "https://api.tbc.city/disaster/org_points.geojson";
-
-    // Property keys (update if your schema differs)
     const FIELDS = {
       name: "Organization Name",
       website: "Website",
@@ -275,48 +218,25 @@
       physical: "Physical Resources",
     };
 
-    // ====== MAP SETUP ======
-    const map = L.map("map", {
-      center: [37.8, -122.3],
-      zoom: 9,
-      scrollWheelZoom: true,
-      tap: true,
-    });
-
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
-    }).addTo(map);
+    // ====== MAP ======
+    const map = L.map("map", { center: [37.8, -122.3], zoom: 9, scrollWheelZoom: true, tap: true });
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>' }).addTo(map);
 
     const markersLayer = L.layerGroup().addTo(map);
-    let allFeatures = []; // keep original data for refiltering
+    let allFeatures = [];
 
     // ====== UTILS ======
-    const el = (sel) => document.querySelector(sel);
-
-    function normalizeTags(value) {
-      if (!value) return [];
-      if (Array.isArray(value)) {
-        return value
-          .map(v => String(v).trim())
-          .filter(Boolean);
-      }
-      // handle comma/semicolon-separated strings
-      return String(value)
-        .split(/[,;|]/)
-        .map(s => s.trim())
-        .filter(Boolean);
+    const el = (s) => document.querySelector(s);
+    function normalizeTags(v) {
+      if (!v) return [];
+      if (Array.isArray(v)) return v.map(x => String(x).trim()).filter(Boolean);
+      return String(v).split(/[,;|]/).map(s => s.trim()).filter(Boolean);
     }
-
     function uniqueSortedTags(features, fieldKey) {
       const set = new Set();
-      for (const f of features) {
-        const tags = normalizeTags(f.properties?.[fieldKey]);
-        tags.forEach(t => set.add(t));
-      }
-      return Array.from(set).sort((a, b) => a.localeCompare(b));
+      for (const f of features) normalizeTags(f.properties?.[fieldKey]).forEach(t => set.add(t));
+      return Array.from(set).sort((a,b) => a.localeCompare(b));
     }
-
     function buildTagList(container, tags, groupKey) {
       container.innerHTML = "";
       for (const tag of tags) {
@@ -326,40 +246,26 @@
         label.setAttribute("for", id);
 
         const input = document.createElement("input");
-        input.type = "checkbox";
-        input.id = id;
-        input.value = tag;
-        input.dataset.group = groupKey;
+        input.type = "checkbox"; input.id = id; input.value = tag; input.dataset.group = groupKey;
 
-        const span = document.createElement("span");
-        span.textContent = tag;
+        const span = document.createElement("span"); span.textContent = tag;
 
-        label.appendChild(input);
-        label.appendChild(span);
-        container.appendChild(label);
+        label.appendChild(input); label.appendChild(span); container.appendChild(label);
       }
     }
-
     function getSelected(groupKey) {
-      return Array.from(document.querySelectorAll(`input[type="checkbox"][data-group="${groupKey}"]:checked`))
-        .map(i => i.value);
+      return Array.from(document.querySelectorAll(`input[type="checkbox"][data-group="${groupKey}"]:checked`)).map(i => i.value);
     }
-
     function featureMatchesSelections(f, sel) {
-      // For each group: if selections exist, feature must match AT LEAST one selection in that group.
-      // If no selections for a group, ignore that group.
-      const props = f.properties || {};
-      const regTags = normalizeTags(props[FIELDS.regular]);
-      const disTags = normalizeTags(props[FIELDS.disaster]);
-      const phyTags = normalizeTags(props[FIELDS.physical]);
-
-      if (sel.regular.length && !sel.regular.some(t => regTags.includes(t))) return false;
-      if (sel.disaster.length && !sel.disaster.some(t => disTags.includes(t))) return false;
-      if (sel.physical.length && !sel.physical.some(t => phyTags.includes(t))) return false;
-
+      const p = f.properties || {};
+      const reg = normalizeTags(p[FIELDS.regular]);
+      const dis = normalizeTags(p[FIELDS.disaster]);
+      const phy = normalizeTags(p[FIELDS.physical]);
+      if (sel.regular.length && !sel.regular.some(t => reg.includes(t))) return false;
+      if (sel.disaster.length && !sel.disaster.some(t => dis.includes(t))) return false;
+      if (sel.physical.length && !sel.physical.some(t => phy.includes(t))) return false;
       return true;
     }
-
     function makePopup(props) {
       const name = props[FIELDS.name] || "(No name)";
       const website = props[FIELDS.website];
@@ -368,13 +274,10 @@
       const contact = props[FIELDS.contact];
       const email = props[FIELDS.email];
       const phone = props[FIELDS.phone];
-
       const reg = normalizeTags(props[FIELDS.regular]);
       const dis = normalizeTags(props[FIELDS.disaster]);
       const phy = normalizeTags(props[FIELDS.physical]);
-
-      const chipRow = arr => arr.map(t => `<span class="chip">${t}</span>`).join(" ");
-
+      const chips = arr => arr.map(t => `<span class="chip">${t}</span>`).join(" ");
       return `
         <div class="popup">
           <h3>${name}</h3>
@@ -384,59 +287,34 @@
           ${contact ? `<div class="field-row"><b>Disaster Contact:</b> ${contact}</div>` : ""}
           ${email ? `<div class="field-row"><b>Email:</b> <a href="mailto:${email}">${email}</a></div>` : ""}
           ${phone ? `<div class="field-row"><b>Phone:</b> <a href="tel:${phone}">${phone}</a></div>` : ""}
-
-          ${reg.length ? `<div class="field-row"><b>Regular Services:</b><div class="tag-strip">${chipRow(reg)}</div></div>` : ""}
-          ${dis.length ? `<div class="field-row"><b>Disaster Services:</b><div class="tag-strip">${chipRow(dis)}</div></div>` : ""}
-          ${phy.length ? `<div class="field-row"><b>Physical Resources:</b><div class="tag-strip">${chipRow(phy)}</div></div>` : ""}
-        </div>
-      `;
+          ${reg.length ? `<div class="field-row"><b>Regular Services:</b><div class="tag-strip">${chips(reg)}</div></div>` : ""}
+          ${dis.length ? `<div class="field-row"><b>Disaster Services:</b><div class="tag-strip">${chips(dis)}</div></div>` : ""}
+          ${phy.length ? `<div class="field-row"><b>Physical Resources:</b><div class="tag-strip">${chips(phy)}</div></div>` : ""}
+        </div>`;
     }
-
-    function clearMarkers() {
-      markersLayer.clearLayers();
-    }
-
+    function clearMarkers() { markersLayer.clearLayers(); }
     function drawMarkers(features) {
       clearMarkers();
       features.forEach(f => {
         const [lng, lat] = f.geometry?.coordinates || [];
         if (typeof lat !== "number" || typeof lng !== "number") return;
-
-        const marker = L.circleMarker([lat, lng], {
-          radius: 6,
-          weight: 2,
-          opacity: 1,
-          fillOpacity: 0.8
-        });
+        const marker = L.circleMarker([lat, lng], { radius: 6, weight: 2, opacity: 1, fillOpacity: 0.8 });
         marker.bindPopup(makePopup(f.properties || {}));
         markersLayer.addLayer(marker);
       });
-
-      // Fit bounds if we just drew a fresh set
       if (features.length) {
         const pts = [];
         features.forEach(f => {
           const [lng, lat] = f.geometry?.coordinates || [];
           if (typeof lat === "number" && typeof lng === "number") pts.push([lat, lng]);
         });
-        if (pts.length) {
-          const bounds = L.latLngBounds(pts);
-          map.fitBounds(bounds.pad(0.08));
-        }
+        if (pts.length) map.fitBounds(L.latLngBounds(pts).pad(0.08));
       }
     }
-
     function applyFilters() {
-      const selections = {
-        regular: getSelected("regular"),
-        disaster: getSelected("disaster"),
-        physical: getSelected("physical")
-      };
-
-      const filtered = allFeatures.filter(f => featureMatchesSelections(f, selections));
-      drawMarkers(filtered);
+      const selections = { regular: getSelected("regular"), disaster: getSelected("disaster"), physical: getSelected("physical") };
+      drawMarkers(allFeatures.filter(f => featureMatchesSelections(f, selections)));
     }
-
     function clearFilters() {
       document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
       applyFilters();
@@ -449,7 +327,6 @@
         const features = Array.isArray(data?.features) ? data.features : [];
         allFeatures = features;
 
-        // Build tag lists from data
         const regTags = uniqueSortedTags(features, FIELDS.regular);
         const disTags = uniqueSortedTags(features, FIELDS.disaster);
         const phyTags = uniqueSortedTags(features, FIELDS.physical);
@@ -458,7 +335,6 @@
         buildTagList(el("#list-disaster"), disTags, "disaster");
         buildTagList(el("#list-physical"), phyTags, "physical");
 
-        // Initial draw
         drawMarkers(allFeatures);
       })
       .catch(err => {
@@ -470,39 +346,23 @@
     el("#applyFilters").addEventListener("click", applyFilters);
     el("#clearFilters").addEventListener("click", clearFilters);
 
-    // ====== Prevent legend scroll from moving the page or map ======
+    // ====== Keep legend scroll from moving the page/map ======
     const scrollBox = el("#panelScroll");
-
-    // Stop wheel from propagating to map/page
-    ["wheel", "mousewheel", "DOMMouseScroll"].forEach(evt =>
-      scrollBox.addEventListener(evt, (e) => {
-        e.stopPropagation();
-      }, { passive: true })
+    ["wheel","mousewheel","DOMMouseScroll"].forEach(evt =>
+      scrollBox.addEventListener(evt, (e) => e.stopPropagation(), { passive: true })
     );
-
-    // Handle touch scrolling inside the panel on mobile without moving the map/page
     let touchStartY = 0;
     scrollBox.addEventListener("touchstart", (e) => {
-      if (e.touches && e.touches.length === 1) {
-        touchStartY = e.touches[0].clientY;
-      }
+      if (e.touches?.length === 1) touchStartY = e.touches[0].clientY;
     }, { passive: true });
-
     scrollBox.addEventListener("touchmove", (e) => {
-      if (!e.touches || e.touches.length !== 1) return;
+      if (e.touches?.length !== 1) return;
       const dy = e.touches[0].clientY - touchStartY;
       const atTop = scrollBox.scrollTop === 0;
       const atBottom = Math.ceil(scrollBox.scrollTop + scrollBox.clientHeight) >= scrollBox.scrollHeight;
-
-      // If we're at the top and scrolling down (dy > 0), or at the bottom and scrolling up (dy < 0),
-      // prevent the gesture from bubbling so the page/map won't pan.
-      if ((atTop && dy > 0) || (atBottom && dy < 0)) {
-        e.preventDefault();
-      }
+      if ((atTop && dy > 0) || (atBottom && dy < 0)) e.preventDefault();
       e.stopPropagation();
     }, { passive: false });
-
-    // Also stop pointer events from hitting the map while interacting with the panel
     el("#filterPanel").addEventListener("pointerdown", (e) => e.stopPropagation());
   </script>
 </body>
