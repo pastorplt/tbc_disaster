@@ -2,71 +2,55 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>TBC Disaster Data Map (Pins)</title>
+  <title>TBC Disaster Data (Pins)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin />
   <style>
     html, body { height: 100%; margin: 0; }
     #map { height: calc(100% - 60px); }
 
-    /* Header / nav (shared look with your other page) */
-    header { background-color: #bf3426; color: #fff; }
+    header { background:#bf3426; color:#fff; }
     .nav {
-      height: 60px; display: flex; align-items: center; gap: 16px;
-      padding: 0 16px; max-width: 1100px; margin: 0 auto;
+      height:60px; display:flex; align-items:center; gap:16px; padding:0 16px;
+      max-width:1100px; margin:0 auto;
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif !important;
     }
-    .nav .brand { text-decoration: none; color:#fff; font-weight:800; letter-spacing:.3px; }
-    .nav-links { margin-left: auto; display:flex; gap:18px; }
+    .nav .brand { color:#fff; text-decoration:none; font-weight:800; letter-spacing:.3px; }
+    .nav-links { margin-left:auto; display:flex; gap:18px; }
     .nav-links a { color:#fff; text-decoration:none; font-weight:700; opacity:.9; }
     .nav-links a:hover { text-decoration:underline; opacity:1; }
 
-    /* Title bubble */
     .map-title {
-      position: absolute; top: 70px; left: 50%; transform: translateX(-50%);
-      z-index: 1000;
-      font: 28px/1.2 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-      font-weight: 800; color: #111; text-align: center;
-      background: rgba(255,255,255,0.95);
-      padding: 10px 18px; border-radius: 16px;
-      box-shadow: 0 2px 8px rgba(0,0,0,.15);
-      pointer-events: none;
+      position:absolute; top:70px; left:50%; transform:translateX(-50%);
+      z-index:1000; font:28px/1.2 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      font-weight:800; color:#111; text-align:center;
+      background:rgba(255,255,255,.95); padding:10px 18px; border-radius:16px;
+      box-shadow:0 2px 8px rgba(0,0,0,.15); pointer-events:none;
     }
 
-    /* Filter drawer (right side panel) */
+    /* Filters panel */
     .filters {
-      position: absolute; top: 70px; right: 10px;
-      width: 320px; max-height: calc(100% - 90px);
+      position:absolute; top:70px; right:10px;
+      width:340px; max-height:calc(100% - 90px);
       overflow:auto; z-index:1000;
-      background: rgba(255,255,255,0.98);
-      border: 1px solid #e5e7eb; border-radius: 12px;
-      box-shadow: 0 4px 16px rgba(0,0,0,.12);
-      padding: 10px;
-      font: 13px/1.35 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background:rgba(255,255,255,.98);
+      border:1px solid #e5e7eb; border-radius:12px;
+      box-shadow:0 4px 16px rgba(0,0,0,.12);
+      padding:10px; font:13px/1.35 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
     }
-    .filters h3 { margin: 6px 0 8px; font-size: 14px; }
-    .filters .group { margin-bottom: 10px; }
-    .filters .search {
-      position: sticky; top: 0; background: rgba(255,255,255,.98);
-      padding-bottom: 6px; border-bottom: 1px solid #eee; z-index: 2;
-    }
-    .filters input[type="search"]{
-      width:100%; box-sizing:border-box; font: inherit;
-      padding: 8px 10px; border:1px solid #e5e7eb; border-radius:8px;
-    }
-    .tag-list { list-style:none; padding: 6px 0 0; margin:0; display:grid; grid-template-columns: 1fr 1fr; gap:6px; }
+    .filters h3 { margin:6px 0 8px; font-size:14px; }
+    .filters .search { position:sticky; top:0; background:rgba(255,255,255,.98); padding-bottom:6px; border-bottom:1px solid #eee; z-index:2; }
+    .tag-list { list-style:none; padding:6px 0 0; margin:0; display:grid; grid-template-columns:1fr 1fr; gap:6px; }
     .tag-item { display:flex; align-items:center; gap:8px; }
-    .tag-item input { transform: scale(1.1); }
+    .tag-item input { transform:scale(1.1); }
     .filters .row { display:flex; gap:8px; }
     .filters .row button {
-      flex:1; border: 1px solid #e5e7eb; background:#f8fafc; border-radius:8px; padding:7px 10px; cursor:pointer;
+      flex:1; border:1px solid #e5e7eb; background:#f8fafc; border-radius:8px; padding:7px 10px; cursor:pointer;
     }
     .filters .row button:hover { background:#eef2ff; }
-    .pin-legend { display:flex; align-items:center; gap:8px; margin-top:6px; color:#374151; }
-    .swatch { width:14px; height:14px; border-radius:999px; border:1px solid rgba(0,0,0,.15); }
 
     /* Popup card */
-    .tip { font: 13px/1.4 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+    .tip { font:13px/1.4 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
     .tip h4 { margin:0 0 6px; font-size:15px; font-weight:700; color:#111; }
     .muted { color:#6b7280; }
     .chip {
@@ -75,48 +59,49 @@
       background:#f3f4f6;
     }
 
-    /* Mobile tweaks */
     @media (max-width: 767.98px) {
       .map-title { font-size:18px; padding:8px 12px; }
-      .filters { left: 10px; width: calc(100% - 20px); max-height: 40vh; bottom: 12px; top: auto; }
+      .filters { left:10px; width:calc(100% - 20px); max-height:40vh; bottom:12px; top:auto; }
       .tag-list { grid-template-columns: 1fr; }
+      .leaflet-control-zoom { display:none !important; }
     }
   </style>
 </head>
 <body>
-  <!-- Reuse your shared navbar if you like -->
   <div id="navbar-include"></div>
   <script src="include-nav.js"></script>
 
   <div id="map">
     <div class="map-title">Disaster Data — Organizations</div>
 
-    <!-- Filters -->
     <aside class="filters" id="filters">
-      <div class="search">
-        <div class="pin-legend">
-          <span class="swatch" id="legendSwatch" style="background:#1f77b4"></span>
-          <span>Filter by Category / Denomination</span>
+      <div class="group" id="regularGroup">
+        <h3>Regular Services</h3>
+        <input type="search" id="regularSearch" placeholder="Search regular services…" />
+        <ul class="tag-list" id="regularList"></ul>
+        <div class="row" style="margin-top:6px">
+          <button id="regularAll" type="button">Select all</button>
+          <button id="regularClear" type="button">Clear</button>
         </div>
       </div>
 
-      <div class="group" id="categoryGroup">
-        <h3>Category</h3>
-        <input type="search" id="categorySearch" placeholder="Search categories…" />
-        <ul class="tag-list" id="categoryList"></ul>
+      <div class="group" id="disasterGroup">
+        <h3>Disaster Services</h3>
+        <input type="search" id="disasterSearch" placeholder="Search disaster services…" />
+        <ul class="tag-list" id="disasterList"></ul>
         <div class="row" style="margin-top:6px">
-          <button id="catSelectAll" type="button">Select all</button>
-          <button id="catClear" type="button">Clear</button>
+          <button id="disasterAll" type="button">Select all</button>
+          <button id="disasterClear" type="button">Clear</button>
         </div>
       </div>
 
-      <div class="group" id="denomGroup">
-        <h3>Denomination</h3>
-        <input type="search" id="denomSearch" placeholder="Search denominations…" />
-        <ul class="tag-list" id="denomList"></ul>
+      <div class="group" id="resourcesGroup">
+        <h3>Physical Resources</h3>
+        <input type="search" id="resourcesSearch" placeholder="Search resources…" />
+        <ul class="tag-list" id="resourcesList"></ul>
         <div class="row" style="margin-top:6px">
-          <button id="denSelectAll" type="button">Select all</button>
-          <button id="denClear" type="button">Clear</button>
+          <button id="resourcesAll" type="button">Select all</button>
+          <button id="resourcesClear" type="button">Clear</button>
         </div>
       </div>
     </aside>
@@ -124,17 +109,16 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin></script>
   <script>
-    // --- Map & basemap ---
-    const map = L.map('map', { center:[37.8,-122.3], zoom: 10, preferCanvas:true });
-    L.tileLayer(
-      'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-      { maxZoom: 20, subdomains:'abcd', attribution:'&copy; OpenStreetMap & CARTO' }
-    ).addTo(map);
+    // --- Map ---
+    const map = L.map('map', { center:[37.8,-122.3], zoom:10, preferCanvas:true });
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+      maxZoom: 20, subdomains: 'abcd', attribution: '&copy; OpenStreetMap & CARTO'
+    }).addTo(map);
 
-    // --- Data URL (static from your Worker/R2) ---
+    // --- Data URL ---
     const PINS_URL = 'https://api.tbc.city/disaster/org_points.geojson?t=' + Date.now();
 
-    // --- Utilities ---
+    // --- Helpers ---
     const palette = [
       '#1f77b4','#ff7f0e','#2ca02c','#d62728','#9467bd',
       '#8c564b','#e377c2','#7f7f7f','#bcbd22','#17becf',
@@ -144,8 +128,8 @@
       '#b2df8a','#fb9a99','#fdbf6f','#cab2d6','#6a3d9a'
     ];
     const hashIndex = (str, m) => {
-      if (!str) return 0;
-      let h = 0; for (let i=0;i<str.length;i++) h = (h*31 + str.charCodeAt(i))|0;
+      if (!str) return 0; let h = 0;
+      for (let i=0;i<str.length;i++) h = (h*31 + str.charCodeAt(i))|0;
       return Math.abs(h) % m;
     };
     const splitTags = (raw) => {
@@ -154,73 +138,76 @@
       return s.split(/[;,]/).map(t => t.trim()).filter(Boolean);
     };
     const uniq = (arr) => Array.from(new Set(arr));
+    const escapeHtml = (s) => String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    const escapeAttr = (s) => String(s ?? '').replace(/"/g,'&quot;');
 
-    // --- Layers & state ---
-    const pinsLayer = L.layerGroup().addTo(map);
-    let allFeatures = [];              // raw GeoJSON features
-    let selectedCats = new Set();      // active filters
-    let selectedDenoms = new Set();
-
-    // --- Render helpers ---
-    function colorForFeature(ft) {
-      // Color primarily by first Category tag (stable colors per category)
-      const cats = splitTags(ft.properties?.category);
-      const key = cats[0] || ft.properties?.organization_name || ft.properties?.id;
-      return palette[hashIndex(String(key), palette.length)];
-    }
-
-    function markerStyle(ft) {
-      const c = colorForFeature(ft);
-      return {
-        radius: 6, fillColor: c, color: '#234', weight: 1, opacity: 1, fillOpacity: 0.9
-      };
-    }
-
-    function chip(text, colorSeed) {
-      const c = palette[hashIndex(String(colorSeed || text), palette.length)];
+    function chip(text, seed) {
+      const c = palette[hashIndex(String(seed || text), palette.length)];
       return '<span class="chip" style="background:' + c + '22;border-color:' + c + '55">' + escapeHtml(text) + '</span>';
     }
 
+    function markerStyle(ft) {
+      const name = ft.properties?.organization_name || ft.properties?.id;
+      const c = palette[hashIndex(String(name), palette.length)];
+      return { radius: 6, fillColor: c, color: '#234', weight: 1, opacity: 1, fillOpacity: 0.9 };
+    }
+
     function popupHtml(p) {
-      const cats = splitTags(p.category);
-      const dens = splitTags(p.denomination);
-      const catChips = cats.map(t => chip(t, 'cat:'+t)).join(' ') || '<span class="muted">—</span>';
-      const denChips = dens.map(t => chip(t, 'den:'+t)).join(' ') || '<span class="muted">—</span>';
-      const addr = p.full_address ? escapeHtml(p.full_address) : '<span class="muted">—</span>';
+      const regs = splitTags(p.regular_services);
+      const diss = splitTags(p.disaster_services);
+      const resx = splitTags(p.physical_resources);
+      const regsChips = regs.map(t => chip(t, 'reg:'+t)).join(' ') || '<span class="muted">—</span>';
+      const dissChips = diss.map(t => chip(t, 'dis:'+t)).join(' ') || '<span class="muted">—</span>';
+      const resxChips = resx.map(t => chip(t, 'res:'+t)).join(' ') || '<span class="muted">—</span>';
+
       const org  = p.organization_name ? escapeHtml(p.organization_name) : 'Unnamed';
-      const web  = p.website && String(p.website).trim()
-        ? `<div><a href="${escapeAttr(p.website)}" target="_blank" rel="noopener">Website</a></div>` : '';
+      const addr = p.full_address ? escapeHtml(p.full_address) : '<span class="muted">—</span>';
+      const type = p.organization_type ? escapeHtml(p.organization_type) : '<span class="muted">—</span>';
+      const contact = p.disaster_contact ? escapeHtml(p.disaster_contact) : '<span class="muted">—</span>';
+      const email = p.disaster_email ? `<a href="mailto:${escapeAttr(p.disaster_email)}">${escapeHtml(p.disaster_email)}</a>` : '<span class="muted">—</span>';
+      const phone = p.disaster_phone ? escapeHtml(p.disaster_phone) : '<span class="muted">—</span>';
+      const web = p.website && String(p.website).trim()
+        ? `<a href="${escapeAttr(p.website)}" target="_blank" rel="noopener">Website</a>` : '<span class="muted">—</span>';
 
       return `
         <div class="tip">
           <h4>${org}</h4>
-          <div><span class="muted">Address:</span> ${addr}</div>
-          <div style="margin-top:6px"><span class="muted">Category:</span> ${catChips}</div>
-          <div style="margin-top:4px"><span class="muted">Denomination:</span> ${denChips}</div>
-          ${web}
+          <div><span class="muted">Organization Type:</span> ${type}</div>
+          <div><span class="muted">Full Address:</span> ${addr}</div>
+          <div><span class="muted">Disaster Contact:</span> ${contact}</div>
+          <div><span class="muted">Disaster Email:</span> ${email}</div>
+          <div><span class="muted">Disaster Phone:</span> ${phone}</div>
+          <div><span class="muted">Website:</span> ${web}</div>
+          <div style="margin-top:6px"><span class="muted">Regular Services:</span> ${regsChips}</div>
+          <div style="margin-top:4px"><span class="muted">Disaster Services:</span> ${dissChips}</div>
+          <div style="margin-top:4px"><span class="muted">Physical Resources:</span> ${resxChips}</div>
         </div>
       `;
     }
 
-    function escapeHtml(s){ return String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
-    function escapeAttr(s){ return String(s ?? '').replace(/"/g,'&quot;'); }
+    // State
+    const pinsLayer = L.layerGroup().addTo(map);
+    let allFeatures = [];
+    let selRegular = new Set();
+    let selDisaster = new Set();
+    let selResources = new Set();
 
-    // --- Filtering logic ---
     function featurePasses(ft) {
       const p = ft.properties || {};
-      const cats = new Set(splitTags(p.category));
-      const dens = new Set(splitTags(p.denomination));
+      const regs = new Set(splitTags(p.regular_services));
+      const diss = new Set(splitTags(p.disaster_services));
+      const resx = new Set(splitTags(p.physical_resources));
 
-      // Group rule: if no selection in a group, it's not filtering that group.
-      // If there is a selection, feature must intersect (OR) with that selection set.
-      if (selectedCats.size) {
-        let hit = false;
-        for (const t of selectedCats) if (cats.has(t)) { hit = true; break; }
+      if (selRegular.size) {
+        let hit = false; for (const t of selRegular) if (regs.has(t)) { hit = true; break; }
         if (!hit) return false;
       }
-      if (selectedDenoms.size) {
-        let hit = false;
-        for (const t of selectedDenoms) if (dens.has(t)) { hit = true; break; }
+      if (selDisaster.size) {
+        let hit = false; for (const t of selDisaster) if (diss.has(t)) { hit = true; break; }
+        if (!hit) return false;
+      }
+      if (selResources.size) {
+        let hit = false; for (const t of selResources) if (resx.has(t)) { hit = true; break; }
         if (!hit) return false;
       }
       return true;
@@ -228,103 +215,91 @@
 
     function renderPins() {
       pinsLayer.clearLayers();
-      const shown = [];
-
-      const layer = L.geoJSON({ type:'FeatureCollection', features: allFeatures.filter(featurePasses) }, {
-        pointToLayer: (ft, latlng) => L.circleMarker(latlng, markerStyle(ft)),
-        onEachFeature: (ft, layer) => {
-          layer.bindPopup(popupHtml(ft.properties), { maxWidth: 420 });
+      const layer = L.geoJSON(
+        { type: 'FeatureCollection', features: allFeatures.filter(featurePasses) },
+        {
+          pointToLayer: (ft, latlng) => L.circleMarker(latlng, markerStyle(ft)),
+          onEachFeature: (ft, layer) => layer.bindPopup(popupHtml(ft.properties), { maxWidth: 480 })
         }
-      });
-
-      layer.addTo(pinsLayer);
+      ).addTo(pinsLayer);
 
       const b = layer.getBounds();
       if (b.isValid()) map.fitBounds(b.pad(0.08));
       return layer;
     }
 
-    // --- Build filter UI from data ---
     function buildFilters(features) {
-      const allCats = uniq(features.flatMap(ft => splitTags(ft.properties?.category))).sort((a,b)=>a.localeCompare(b));
-      const allDens = uniq(features.flatMap(ft => splitTags(ft.properties?.denomination))).sort((a,b)=>a.localeCompare(b));
+      const allReg = uniq(features.flatMap(ft => splitTags(ft.properties?.regular_services))).sort((a,b)=>a.localeCompare(b));
+      const allDis = uniq(features.flatMap(ft => splitTags(ft.properties?.disaster_services))).sort((a,b)=>a.localeCompare(b));
+      const allRes = uniq(features.flatMap(ft => splitTags(ft.properties?.physical_resources))).sort((a,b)=>a.localeCompare(b));
 
-      // Category list
-      const catList = document.getElementById('categoryList');
-      const catSearch = document.getElementById('categorySearch');
-      const renderCatList = () => {
-        const q = catSearch.value.trim().toLowerCase();
-        catList.innerHTML = '';
-        allCats
-          .filter(t => !q || t.toLowerCase().includes(q))
-          .forEach(t => {
-            const li = document.createElement('li'); li.className = 'tag-item';
-            const id = 'cat_' + t.replace(/\W+/g, '_');
-            li.innerHTML =
-              `<input type="checkbox" id="${id}" value="${escapeAttr(t)}">
-               <label for="${id}">${escapeHtml(t)}</label>`;
-            const cb = li.querySelector('input');
-            cb.addEventListener('change', () => {
-              if (cb.checked) selectedCats.add(t); else selectedCats.delete(t);
-              renderPins();
+      // Reusable builder
+      function build(groupId, searchId, listId, allTags, selectionSet) {
+        const list = document.getElementById(listId);
+        const search = document.getElementById(searchId);
+        const renderList = () => {
+          const q = search.value.trim().toLowerCase();
+          list.innerHTML = '';
+          allTags
+            .filter(t => !q || t.toLowerCase().includes(q))
+            .forEach(t => {
+              const li = document.createElement('li'); li.className = 'tag-item';
+              const id = listId + '_' + t.replace(/\W+/g,'_');
+              li.innerHTML = `<input type="checkbox" id="${id}" value="${escapeAttr(t)}">
+                              <label for="${id}">${escapeHtml(t)}</label>`;
+              const cb = li.querySelector('input');
+              cb.addEventListener('change', () => {
+                if (cb.checked) selectionSet.add(t); else selectionSet.delete(t);
+                renderPins();
+              });
+              list.appendChild(li);
             });
-            catList.appendChild(li);
-          });
-      };
-      renderCatList();
-      catSearch.addEventListener('input', renderCatList);
-      document.getElementById('catSelectAll').addEventListener('click', () => {
-        selectedCats = new Set(allCats); // all selected
-        catList.querySelectorAll('input[type=checkbox]').forEach(cb => cb.checked = true);
+        };
+        renderList();
+        search.addEventListener('input', renderList);
+      }
+
+      build('regularGroup','regularSearch','regularList', allReg, selRegular);
+      build('disasterGroup','disasterSearch','disasterList', allDis, selDisaster);
+      build('resourcesGroup','resourcesSearch','resourcesList', allRes, selResources);
+
+      document.getElementById('regularAll').addEventListener('click', () => {
+        selRegular = new Set(allReg);
+        document.querySelectorAll('#regularList input[type=checkbox]').forEach(cb => cb.checked = true);
         renderPins();
       });
-      document.getElementById('catClear').addEventListener('click', () => {
-        selectedCats.clear();
-        catList.querySelectorAll('input[type=checkbox]').forEach(cb => cb.checked = false);
+      document.getElementById('regularClear').addEventListener('click', () => {
+        selRegular.clear();
+        document.querySelectorAll('#regularList input[type=checkbox]').forEach(cb => cb.checked = false);
         renderPins();
       });
 
-      // Denomination list
-      const denList = document.getElementById('denomList');
-      const denSearch = document.getElementById('denomSearch');
-      const renderDenList = () => {
-        const q = denSearch.value.trim().toLowerCase();
-        denList.innerHTML = '';
-        allDens
-          .filter(t => !q || t.toLowerCase().includes(q))
-          .forEach(t => {
-            const li = document.createElement('li'); li.className = 'tag-item';
-            const id = 'den_' + t.replace(/\W+/g, '_');
-            li.innerHTML =
-              `<input type="checkbox" id="${id}" value="${escapeAttr(t)}">
-               <label for="${id}">${escapeHtml(t)}</label>`;
-            const cb = li.querySelector('input');
-            cb.addEventListener('change', () => {
-              if (cb.checked) selectedDenoms.add(t); else selectedDenoms.delete(t);
-              renderPins();
-            });
-            denList.appendChild(li);
-          });
-      };
-      renderDenList();
-      denSearch.addEventListener('input', renderDenList);
-      document.getElementById('denSelectAll').addEventListener('click', () => {
-        selectedDenoms = new Set(allDens);
-        denList.querySelectorAll('input[type=checkbox]').forEach(cb => cb.checked = true);
+      document.getElementById('disasterAll').addEventListener('click', () => {
+        selDisaster = new Set(allDis);
+        document.querySelectorAll('#disasterList input[type=checkbox]').forEach(cb => cb.checked = true);
         renderPins();
       });
-      document.getElementById('denClear').addEventListener('click', () => {
-        selectedDenoms.clear();
-        denList.querySelectorAll('input[type=checkbox]').forEach(cb => cb.checked = false);
+      document.getElementById('disasterClear').addEventListener('click', () => {
+        selDisaster.clear();
+        document.querySelectorAll('#disasterList input[type=checkbox]').forEach(cb => cb.checked = false);
+        renderPins();
+      });
+
+      document.getElementById('resourcesAll').addEventListener('click', () => {
+        selResources = new Set(allRes);
+        document.querySelectorAll('#resourcesList input[type=checkbox]').forEach(cb => cb.checked = true);
+        renderPins();
+      });
+      document.getElementById('resourcesClear').addEventListener('click', () => {
+        selResources.clear();
+        document.querySelectorAll('#resourcesList input[type=checkbox]').forEach(cb => cb.checked = false);
         renderPins();
       });
     }
 
-    // --- Load & go ---
     fetch(PINS_URL, { cache:'no-cache' })
       .then(r => r.json())
       .then(fc => {
-        // Expect features have: organization_name, full_address, website, category, denomination, pastors_name
         allFeatures = (fc && fc.features) ? fc.features.slice() : [];
         buildFilters(allFeatures);
         renderPins();
