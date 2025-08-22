@@ -2,25 +2,42 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>TBC Disaster Data Map</title>
+  <title>TBC Disaster Data</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-  <!-- Leaflet CSS (same as network_map.html approach) -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
 
   <style>
     html, body { height: 100%; margin: 0; }
 
-    /* Leave room for the persistent header (60px) like network_map.html */
+    /* Leave room for the persistent header (60px), same as network map */
     #map { height: calc(100% - 60px); }
 
-    /* ===== Header / Nav (included like the network map) ===== */
-    header {
-      background-color: #bf3426; /* brand color */
-      color: #fff;
+    /* ===== Header / Nav (shared include) ===== */
+    header { background-color: #bf3426; color: #fff; }
+    .nav { height: 60px; display: flex; align-items: center; gap: 16px; padding: 0 16px; max-width: 1100px; margin: 0 auto; }
+    .nav .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: #fff; font-weight: 800; letter-spacing: .3px; }
+    .nav .brand img { height: 36px; width: auto; display: block; }
+    .nav-links { display: flex; align-items: center; gap: 18px; margin-left: auto; }
+    .nav-links a { color: #fff; text-decoration: none; font-weight: 700; padding: 6px 4px; border-radius: 4px; opacity: .9; }
+    .nav-links a:hover { text-decoration: underline; opacity: 1; }
+    .nav-links a.active { text-decoration: underline; opacity: 1; }
+    .nav, .nav a, .nav .brand { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif !important; }
+
+    /* Title chip (centered), same style as network map */
+    .map-title {
+      position: absolute; top: 70px; left: 50%; transform: translateX(-50%);
+      z-index: 1000;
+      font: 40px/1.2 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      font-weight: 800; color: #111; text-align: center;
+      background: rgba(255,255,255,0.9);
+      padding: 14px 25px; border-radius: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      pointer-events: none;
     }
 
-    /* ===== Legend/Filters panel — same look & classes as network_map.html ===== */
+    .leaflet-interactive { cursor: pointer; }
+
+    /* ============ Legend / Filters (desktop panel + mobile side sheet) ============ */
     .legend-panel {
       position: absolute;
       top: 70px; left: 10px;
@@ -38,42 +55,22 @@
       overscroll-behavior: contain;
       touch-action: pan-y;
     }
-
-    /* Keep header hidden on desktop (we’re just calling it "Filters") */
     .legend-header { display: none; }
     .legend-title { font-weight: 700; font-size: 14px; margin: 4px 0 8px; color: #111; }
 
-    details {
-      margin-bottom: 8px;
-      border-radius: 8px;
-      background: #f8fafc;
-      border: 1px solid #e5e7eb;
-      padding: 6px 8px;
-    }
+    details { margin-bottom: 8px; border-radius: 8px; background: #f8fafc; border: 1px solid #e5e7eb; padding: 6px 8px; }
     details[open] { background: #eef2ff; }
-    summary {
-      list-style: none; cursor: pointer; display: flex; align-items: center;
-      justify-content: space-between; gap: 8px; padding: 6px 4px; font-weight: 600;
-    }
+    summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 4px; font-weight: 600; }
     summary::-webkit-details-marker { display: none; }
     .chev { transition: transform .2s ease; }
     details[open] .chev { transform: rotate(90deg); }
 
     .tag-list { display: grid; grid-template-columns: 1fr; gap: 6px; margin-top: 8px; }
-    .tag-pill {
-      display: inline-flex; align-items: center; gap: 8px;
-      border: 1px solid #e3e6ef; border-radius: 999px;
-      padding: 6px 10px; background: #fff; font-size: 13px; user-select: none; cursor: pointer;
-    }
+    .tag-pill { display: inline-flex; align-items: center; gap: 8px; border: 1px solid #e3e6ef; border-radius: 999px; padding: 6px 10px; background: #fff; font-size: 13px; user-select: none; cursor: pointer; }
     .tag-pill input { cursor: pointer; }
 
-    .panel-actions {
-      display: flex; gap: 8px; padding-top: 8px; margin-top: 8px; border-top: 1px solid #e5e7eb;
-    }
-    .btn {
-      border: 1px solid #d9deea; background: #fff; padding: 8px 12px;
-      border-radius: 10px; font-size: 13px; cursor: pointer;
-    }
+    .panel-actions { display: flex; gap: 8px; padding-top: 8px; margin-top: 8px; border-top: 1px solid #e5e7eb; }
+    .btn { border: 1px solid #d9deea; background: #fff; padding: 8px 12px; border-radius: 10px; font-size: 13px; cursor: pointer; }
     .btn-primary { border-color: #3b82f6; background: #3b82f6; color: #fff; }
 
     /* Popup content */
@@ -85,53 +82,84 @@
     .chip { display: inline-block; padding: 3px 8px; border-radius: 999px; border: 1px solid #e1e5ee; background: #f8fafc; font-size: 12px; }
     .popup hr { border:0; border-top:1px solid #e9ecef; margin:8px 0; }
 
-    /* Layer control headings (match network map) */
-    .leaflet-control-layers .basemap-heading,
-    .leaflet-control-layers .overlays-heading {
-      font-weight: 600; margin-bottom: 4px; display: block;
-    }
+    /* Mobile-only button to toggle legend */
+    .legend-toggle { display: none; }
 
-    /* Mobile tweaks (match network map behavior) */
+    /* ---------------- Mobile (<768px) ---------------- */
     @media (max-width: 767.98px) {
+      .map-title { font-size: 22px; padding: 10px 16px; border-radius: 14px; }
+
       .legend-panel {
-        position: fixed; top: 70px; left: 10px; right: 10px;
-        width: auto; max-height: calc(100% - 90px);
+        position: fixed; top: 0; bottom: 0; left: 0; right: auto;
+        width: 50vw; max-width: none; height: 100vh;
+        border-radius: 0 12px 12px 0; padding: 8px 10px 12px;
+        transform: translateX(-100%); transition: transform 220ms ease;
+        border-left: 0; border-right: 1px solid #e5e7eb;
+        box-shadow: 0 4px 16px rgba(0,0,0,.12);
+        background: rgba(255,255,255,0.98);
+        -webkit-overflow-scrolling: touch; overscroll-behavior: contain; touch-action: pan-y;
       }
+      .legend-panel.open { transform: translateX(0); }
+
+      .legend-header {
+        display: flex; align-items: center; justify-content: space-between;
+        gap: 8px; padding: 6px 2px 8px; position: sticky; top: 0;
+        background: rgba(255,255,255,0.98); z-index: 2;
+      }
+      .legend-grabber { width: 40px; height: 4px; border-radius: 2px; background: #cbd5e1; margin: 4px auto 8px auto; }
+      .legend-title { margin: 0 0 8px; }
+      .legend-close-btn { border: none; background: #f3f4f6; color: #111; border-radius: 8px; padding: 6px 10px; font-size: 12px; cursor: pointer; }
+      .legend-close-btn:active { transform: translateY(1px); }
+
+      .desktop-only { display: none; }
+
+      .legend-toggle {
+        display: inline-flex; align-items: center; justify-content: center;
+        position: fixed; left: 12px; bottom: 12px; z-index: 1001;
+        background: #111; color: #fff; border: 0;
+        border-radius: 999px; padding: 10px 14px; font: 14px/1 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+        box-shadow: 0 6px 18px rgba(0,0,0,.2);
+      }
+      .legend-toggle:active { transform: translateY(1px); }
+
+      /* Hide Leaflet +/- zoom on mobile for space */
       .leaflet-control-zoom { display: none !important; }
     }
+
+    /* Layer control headings (match network map) */
+    .leaflet-control-layers .basemap-heading,
+    .leaflet-control-layers .overlays-heading { font-weight: 600; margin-bottom: 4px; display: block; }
   </style>
 </head>
 <body>
-  <!-- Persistent header / nav (shared include) -->
+  <!-- Shared header / nav -->
   <div id="navbar-include"></div>
   <script src="include-nav.js"></script>
 
   <div id="map">
-    <!-- Filters panel (same topology as legend panel in network map) -->
+    <div class="map-title">TBC Disaster Data</div>
+
+    <!-- Mobile FAB -->
+    <button id="legendToggle" class="legend-toggle" type="button" aria-expanded="false" aria-controls="legendPanel">
+      Legend
+    </button>
+
+    <!-- Filters panel (desktop + mobile sheet) -->
     <aside class="legend-panel" id="legendPanel" aria-label="Filters">
-      <div class="legend-title">Filters</div>
+      <!-- Mobile-only header -->
+      <div class="legend-header">
+        <div class="legend-grabber" aria-hidden="true"></div>
+        <div class="legend-title">Filters</div>
+        <button class="legend-close-btn" type="button" id="legendClose">Close</button>
+      </div>
+
+      <!-- Desktop title -->
+      <div class="legend-title desktop-only">Filters</div>
 
       <!-- All start collapsed -->
-      <details id="grp-regular">
-        <summary>
-          <span>Regular Services</span><span class="chev">▶</span>
-        </summary>
-        <div class="tag-list" id="list-regular"></div>
-      </details>
-
-      <details id="grp-disaster">
-        <summary>
-          <span>Disaster Services</span><span class="chev">▶</span>
-        </summary>
-        <div class="tag-list" id="list-disaster"></div>
-      </details>
-
-      <details id="grp-physical">
-        <summary>
-          <span>Physical Resources</span><span class="chev">▶</span>
-        </summary>
-        <div class="tag-list" id="list-physical"></div>
-      </details>
+      <details id="grp-regular"><summary><span>Regular Services</span><span class="chev">▶</span></summary><div class="tag-list" id="list-regular"></div></details>
+      <details id="grp-disaster"><summary><span>Disaster Services</span><span class="chev">▶</span></summary><div class="tag-list" id="list-disaster"></div></details>
+      <details id="grp-physical"><summary><span>Physical Resources</span><span class="chev">▶</span></summary><div class="tag-list" id="list-physical"></div></details>
 
       <div class="panel-actions">
         <button class="btn" id="clearFilters">Clear filters</button>
@@ -140,13 +168,9 @@
     </aside>
   </div>
 
-  <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script>
-    // ========= CONFIG =========
-    const GEOJSON_URL = "https://api.tbc.city/disaster/org_points.geojson";
-
-    // ========= MAP + BASEMAPS (mirrors network_map.html) =========
+    // ===== Basemaps (identical set & labels to network_map.html) =====
     const esriGray = L.tileLayer(
       'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',
       { maxZoom: 20, attribution: 'Tiles &copy; Esri' }
@@ -167,32 +191,32 @@
     const map = L.map('map', {
       center: [37.8, -122.3],
       zoom: 9,
-      layers: [esriGray], // default "Light" to match network map
+      layers: [esriGray], // default "Light"
       preferCanvas: true
     });
 
     const baseMaps = { 'Light': esriGray, 'Medium': cartoPositron, 'Street': esriWorldStreet, 'Topo': esriTopo };
-    const overlays = {}; // none yet, but we’ll keep the heading consistent
-
-    const layerControl = L.control.layers(baseMaps, overlays, { position: 'topright', collapsed: false }).addTo(map);
+    const layerControl = L.control.layers(baseMaps, null, { position: 'topright', collapsed: false }).addTo(map);
     const controlEl = layerControl.getContainer();
     const baseList = controlEl.querySelector('.leaflet-control-layers-base');
     if (baseList) { const h = document.createElement('div'); h.className = 'basemap-heading'; h.textContent = 'Basemap'; baseList.prepend(h); }
-    const overlayList = controlEl.querySelector('.leaflet-control-layers-overlays');
-    if (overlayList) { const h = document.createElement('div'); h.className = 'overlays-heading'; h.textContent = 'Layers'; overlayList.prepend(h); }
 
-    // ========= DATA + FIELD RESOLUTION =========
+    // ===== Data config =====
+    const GEOJSON_URL = "https://api.tbc.city/disaster/org_points.geojson";
+
     let allFeatures = [];
     let FIELDS = {};
 
     const el = (s) => document.querySelector(s);
+
+    // Robust field resolver (case/spacing tolerant)
     const normKey = (s) => String(s||'').toLowerCase().replace(/[\s._-]+/g,'').replace(/[^\p{L}\p{N}]/gu,'');
     function resolveFieldsFromSample(props) {
       const keys = Object.keys(props||{});
       const byNorm = new Map(keys.map(k => [normKey(k), k]));
-      const pick = (...cands) => {
-        for (const c of cands) { const k = normKey(c); if (byNorm.has(k)) return byNorm.get(k); }
-        for (const [nk, orig] of byNorm.entries()) if (cands.some(c => nk.includes(normKey(c)))) return orig;
+      const pick = (...c) => {
+        for (const cand of c) { const k = normKey(cand); if (byNorm.has(k)) return byNorm.get(k); }
+        for (const [nk, orig] of byNorm.entries()) if (c.some(cand => nk.includes(normKey(cand)))) return orig;
         return null;
       };
       return {
@@ -209,6 +233,7 @@
       };
     }
 
+    // Tags
     function normalizeTags(v) {
       if (!v && v !== 0) return [];
       if (Array.isArray(v)) return v.map(x => String(x).trim()).filter(Boolean);
@@ -219,7 +244,6 @@
       for (const f of features) normalizeTags(f.properties?.[fieldKey]).forEach(t => set.add(t));
       return Array.from(set).sort((a,b)=>a.localeCompare(b));
     }
-
     function buildTagList(container, tags, groupKey) {
       container.innerHTML = "";
       tags.forEach(tag => {
@@ -244,7 +268,7 @@
       return true;
     }
 
-    // ========= Marker coloring: 30-color palette, unique per church =========
+    // 30-color palette (unique per org via name+address hash)
     const PALETTE30 = [
       '#1f77b4','#ff7f0e','#2ca02c','#d62728','#9467bd',
       '#8c564b','#e377c2','#7f7f7f','#bcbd22','#17becf',
@@ -315,13 +339,17 @@
         physical: getSelected("physical")
       };
       drawMarkers(allFeatures.filter(f => featureMatchesSelections(f, selections)));
+      collapseAllSections(); // collapse after applying
     }
     function clearFilters() {
       document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
       applyFilters();
     }
+    function collapseAllSections() {
+      document.querySelectorAll('#legendPanel details[open]').forEach(d => d.removeAttribute('open'));
+    }
 
-    // ========= Fetch & Init =========
+    // ===== Fetch & init =====
     fetch(GEOJSON_URL, { cache: 'no-cache' })
       .then(r => r.json())
       .then(data => {
@@ -333,7 +361,6 @@
         const regTags = uniqueSortedTags(features, FIELDS.regular);
         const disTags = uniqueSortedTags(features, FIELDS.disaster);
         const phyTags = uniqueSortedTags(features, FIELDS.physical);
-
         buildTagList(el("#list-regular"), regTags, "regular");
         buildTagList(el("#list-disaster"), disTags, "disaster");
         buildTagList(el("#list-physical"), phyTags, "physical");
@@ -349,10 +376,56 @@
     el("#applyFilters").addEventListener("click", applyFilters);
     el("#clearFilters").addEventListener("click", clearFilters);
 
-    // Keep legend scroll local and prevent map scroll hijack
+    // ===== Legend mobile interactions (same pattern as network map) =====
     const legendPanel = document.getElementById('legendPanel');
+    const legendToggle = document.getElementById('legendToggle');
+    const legendClose = document.getElementById('legendClose');
+
+    // prevent map from stealing legend scroll/click
     L.DomEvent.disableScrollPropagation(legendPanel);
     L.DomEvent.disableClickPropagation(legendPanel);
+
+    function isMobile() { return window.matchMedia('(max-width: 767.98px)').matches; }
+
+    // background scroll lock when sheet open
+    let scrollLockY = 0;
+    function lockScroll() {
+      scrollLockY = window.scrollY || document.documentElement.scrollTop || 0;
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollLockY}px`;
+      document.body.style.left = '0';
+      document.body.style.right = '0';
+      document.body.style.width = '100%';
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+    }
+    function unlockScroll() {
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.left = '';
+      document.body.style.right = '';
+      document.body.style.width = '';
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+      window.scrollTo(0, scrollLockY);
+    }
+
+    function openLegend() {
+      legendPanel.classList.add('open');
+      if (legendToggle) legendToggle.setAttribute('aria-expanded', 'true');
+      if (isMobile()) lockScroll();
+    }
+    function closeLegend() {
+      legendPanel.classList.remove('open');
+      if (legendToggle) legendToggle.setAttribute('aria-expanded', 'false');
+      if (isMobile()) unlockScroll();
+    }
+
+    if (legendToggle) legendToggle.addEventListener('click', () => {
+      const isOpen = legendPanel.classList.contains('open');
+      isOpen ? closeLegend() : openLegend();
+    });
+    if (legendClose) legendClose.addEventListener('click', closeLegend);
   </script>
 </body>
 </html>
