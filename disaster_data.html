@@ -5,155 +5,197 @@
   <title>TBC Disaster Data Map</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <!-- Leaflet CSS -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-    crossorigin=""
-  />
+  <!-- Leaflet CSS (same as network_map.html approach) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
 
   <style>
-    html, body {
-      height: 100%;
-      margin: 0;
-      overflow: hidden;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-      background: #f6f7fb;
-    }
-    #map { position: absolute; inset: 0; width: 100%; height: 100vh; z-index: 1; }
+    html, body { height: 100%; margin: 0; }
 
-    /* Filter panel */
-    .filter-panel {
-      position: absolute; top: 12px; left: 12px;
-      width: min(360px, calc(100vw - 24px));
-      max-height: calc(100vh - 24px);
-      background: #fff; border-radius: 14px; box-shadow: 0 6px 22px rgba(0,0,0,0.15);
-      overflow: hidden; display: flex; flex-direction: column; z-index: 1000;
-    }
-    .panel-header { padding: 12px 14px; border-bottom: 1px solid #e8e8ee; background: #fff; }
-    .panel-header h2 { font-size: 16px; font-weight: 600; margin: 0; }
+    /* Leave room for the persistent header (60px) like network_map.html */
+    #map { height: calc(100% - 60px); }
 
-    .panel-scroll {
-      overflow-y: auto; -webkit-overflow-scrolling: touch;
-      padding: 10px 12px 14px;
-      max-height: calc(100vh - 24px - 56px);
+    /* ===== Header / Nav (included like the network map) ===== */
+    header {
+      background-color: #bf3426; /* brand color */
+      color: #fff;
     }
 
-    details { border: 1px solid #ececf3; border-radius: 12px; background: #fafbff; margin-bottom: 10px; padding: 6px 8px; }
-    details[open] { background: #f5f7ff; }
-    summary { list-style: none; cursor: pointer; font-weight: 600; font-size: 14px; }
+    /* ===== Legend/Filters panel — same look & classes as network_map.html ===== */
+    .legend-panel {
+      position: absolute;
+      top: 70px; left: 10px;
+      width: 300px; max-height: calc(100% - 90px);
+      overflow-y: auto;
+      z-index: 1000;
+      background: rgba(255,255,255,0.95);
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(0,0,0,.12);
+      padding: 10px;
+      font: 13px/1.35 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+      touch-action: pan-y;
+    }
+
+    /* Keep header hidden on desktop (we’re just calling it "Filters") */
+    .legend-header { display: none; }
+    .legend-title { font-weight: 700; font-size: 14px; margin: 4px 0 8px; color: #111; }
+
+    details {
+      margin-bottom: 8px;
+      border-radius: 8px;
+      background: #f8fafc;
+      border: 1px solid #e5e7eb;
+      padding: 6px 8px;
+    }
+    details[open] { background: #eef2ff; }
+    summary {
+      list-style: none; cursor: pointer; display: flex; align-items: center;
+      justify-content: space-between; gap: 8px; padding: 6px 4px; font-weight: 600;
+    }
     summary::-webkit-details-marker { display: none; }
-    .summary-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
     .chev { transition: transform .2s ease; }
     details[open] .chev { transform: rotate(90deg); }
 
     .tag-list { display: grid; grid-template-columns: 1fr; gap: 6px; margin-top: 8px; }
-    .tag-pill { display: inline-flex; align-items: center; gap: 8px; border: 1px solid #e3e6ef; border-radius: 999px; padding: 6px 10px; background: #fff; font-size: 13px; cursor: pointer; user-select: none; }
+    .tag-pill {
+      display: inline-flex; align-items: center; gap: 8px;
+      border: 1px solid #e3e6ef; border-radius: 999px;
+      padding: 6px 10px; background: #fff; font-size: 13px; user-select: none; cursor: pointer;
+    }
     .tag-pill input { cursor: pointer; }
 
-    .panel-actions { display: flex; gap: 8px; padding: 10px 12px 12px; border-top: 1px solid #ececf3; background: #fff; }
-    .btn { border: 1px solid #d9deea; background: #fff; padding: 8px 12px; border-radius: 10px; font-size: 13px; cursor: pointer; }
+    .panel-actions {
+      display: flex; gap: 8px; padding-top: 8px; margin-top: 8px; border-top: 1px solid #e5e7eb;
+    }
+    .btn {
+      border: 1px solid #d9deea; background: #fff; padding: 8px 12px;
+      border-radius: 10px; font-size: 13px; cursor: pointer;
+    }
     .btn-primary { border-color: #3b82f6; background: #3b82f6; color: #fff; }
 
-    .popup { font-size: 13px; line-height: 1.35; min-width: 240px; max-width: 340px; }
-    .popup h3 { font-size: 15px; margin: 0 0 6px; }
+    /* Popup content */
+    .popup { font: 13px/1.35 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; min-width: 240px; max-width: 360px; color: #111; }
+    .popup h3 { font-size: 15px; margin: 0 0 6px; font-weight: 700; }
     .field-row { margin: 4px 0; }
     .field-row b { font-weight: 600; }
     .tag-strip { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
     .chip { display: inline-block; padding: 3px 8px; border-radius: 999px; border: 1px solid #e1e5ee; background: #f8fafc; font-size: 12px; }
+    .popup hr { border:0; border-top:1px solid #e9ecef; margin:8px 0; }
 
-    @media (max-width: 640px) { .filter-panel { width: calc(100vw - 24px); } }
+    /* Layer control headings (match network map) */
+    .leaflet-control-layers .basemap-heading,
+    .leaflet-control-layers .overlays-heading {
+      font-weight: 600; margin-bottom: 4px; display: block;
+    }
+
+    /* Mobile tweaks (match network map behavior) */
+    @media (max-width: 767.98px) {
+      .legend-panel {
+        position: fixed; top: 70px; left: 10px; right: 10px;
+        width: auto; max-height: calc(100% - 90px);
+      }
+      .leaflet-control-zoom { display: none !important; }
+    }
   </style>
 </head>
 <body>
-  <div id="map"></div>
+  <!-- Persistent header / nav (shared include) -->
+  <div id="navbar-include"></div>
+  <script src="include-nav.js"></script>
 
-  <!-- Filters -->
-  <aside class="filter-panel" id="filterPanel">
-    <div class="panel-header"><h2>Filters</h2></div>
-    <div class="panel-scroll" id="panelScroll">
-      <details id="grp-regular"><summary><div class="summary-row"><span>Regular Services</span><span class="chev">▶</span></div></summary><div class="tag-list" id="list-regular"></div></details>
-      <details id="grp-disaster"><summary><div class="summary-row"><span>Disaster Services</span><span class="chev">▶</span></div></summary><div class="tag-list" id="list-disaster"></div></details>
-      <details id="grp-physical"><summary><div class="summary-row"><span>Physical Resources</span><span class="chev">▶</span></div></summary><div class="tag-list" id="list-physical"></div></details>
-    </div>
-    <div class="panel-actions">
-      <button class="btn" id="clearFilters">Clear filters</button>
-      <button class="btn btn-primary" id="applyFilters">Apply</button>
-    </div>
-  </aside>
+  <div id="map">
+    <!-- Filters panel (same topology as legend panel in network map) -->
+    <aside class="legend-panel" id="legendPanel" aria-label="Filters">
+      <div class="legend-title">Filters</div>
+
+      <!-- All start collapsed -->
+      <details id="grp-regular">
+        <summary>
+          <span>Regular Services</span><span class="chev">▶</span>
+        </summary>
+        <div class="tag-list" id="list-regular"></div>
+      </details>
+
+      <details id="grp-disaster">
+        <summary>
+          <span>Disaster Services</span><span class="chev">▶</span>
+        </summary>
+        <div class="tag-list" id="list-disaster"></div>
+      </details>
+
+      <details id="grp-physical">
+        <summary>
+          <span>Physical Resources</span><span class="chev">▶</span>
+        </summary>
+        <div class="tag-list" id="list-physical"></div>
+      </details>
+
+      <div class="panel-actions">
+        <button class="btn" id="clearFilters">Clear filters</button>
+        <button class="btn btn-primary" id="applyFilters">Apply</button>
+      </div>
+    </aside>
+  </div>
 
   <!-- Leaflet JS -->
-  <script
-    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-    crossorigin=""
-  ></script>
-
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script>
     // ========= CONFIG =========
     const GEOJSON_URL = "https://api.tbc.city/disaster/org_points.geojson";
 
-    // ========= MAP + BASEMAPS =========
-    // Basemaps (same style of control as network_map.html)
-    const osm = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
-    });
-    const cartoPositron = L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
-      maxZoom: 20, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
-    });
-    const esriStreets = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}", {
-      maxZoom: 20, attribution: "Tiles &copy; Esri"
-    });
-    const esriImagery = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
-      maxZoom: 20, attribution: "Tiles &copy; Esri"
-    });
+    // ========= MAP + BASEMAPS (mirrors network_map.html) =========
+    const esriGray = L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+      { maxZoom: 20, attribution: 'Tiles &copy; Esri' }
+    );
+    const cartoPositron = L.tileLayer(
+      'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+      { maxZoom: 20, subdomains: 'abcd', attribution: '&copy; OpenStreetMap contributors &copy; CARTO' }
+    );
+    const esriWorldStreet = L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+      { maxZoom: 20, attribution: 'Tiles &copy; Esri' }
+    );
+    const esriTopo = L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
+      { maxZoom: 20, attribution: 'Tiles &copy; Esri' }
+    );
 
-    const map = L.map("map", {
+    const map = L.map('map', {
       center: [37.8, -122.3],
       zoom: 9,
-      layers: [cartoPositron], // default basemap
-      scrollWheelZoom: true,
-      tap: true
+      layers: [esriGray], // default "Light" to match network map
+      preferCanvas: true
     });
 
-    const baseMaps = {
-      "Carto Positron": cartoPositron,
-      "OpenStreetMap": osm,
-      "Esri Streets": esriStreets,
-      "Esri Imagery": esriImagery
-    };
-    L.control.layers(baseMaps, null, { position: "topright", collapsed: true }).addTo(map);
+    const baseMaps = { 'Light': esriGray, 'Medium': cartoPositron, 'Street': esriWorldStreet, 'Topo': esriTopo };
+    const overlays = {}; // none yet, but we’ll keep the heading consistent
 
-    const markersLayer = L.layerGroup().addTo(map);
+    const layerControl = L.control.layers(baseMaps, overlays, { position: 'topright', collapsed: false }).addTo(map);
+    const controlEl = layerControl.getContainer();
+    const baseList = controlEl.querySelector('.leaflet-control-layers-base');
+    if (baseList) { const h = document.createElement('div'); h.className = 'basemap-heading'; h.textContent = 'Basemap'; baseList.prepend(h); }
+    const overlayList = controlEl.querySelector('.leaflet-control-layers-overlays');
+    if (overlayList) { const h = document.createElement('div'); h.className = 'overlays-heading'; h.textContent = 'Layers'; overlayList.prepend(h); }
 
+    // ========= DATA + FIELD RESOLUTION =========
     let allFeatures = [];
-    let FIELDS = {}; // resolved dynamically
+    let FIELDS = {};
 
-    // ========= UTILITIES =========
     const el = (s) => document.querySelector(s);
-
-    function normalizeTags(value) {
-      if (!value && value !== 0) return [];
-      if (Array.isArray(value)) return value.map(v => String(v).trim()).filter(Boolean);
-      return String(value).split(/[,;|]/).map(s => s.trim()).filter(Boolean);
-    }
-
-    // Robust field resolver: case/space/punct tolerant
-    function makeKey(s) {
-      return String(s || "").toLowerCase().replace(/[\s._-]+/g, "").replace(/[^\p{L}\p{N}]/gu, "");
-    }
-    function resolveFieldsFromSample(sampleProps) {
-      const keys = Object.keys(sampleProps || {});
-      const byNorm = new Map(keys.map(k => [makeKey(k), k]));
+    const normKey = (s) => String(s||'').toLowerCase().replace(/[\s._-]+/g,'').replace(/[^\p{L}\p{N}]/gu,'');
+    function resolveFieldsFromSample(props) {
+      const keys = Object.keys(props||{});
+      const byNorm = new Map(keys.map(k => [normKey(k), k]));
       const pick = (...cands) => {
-        for (const c of cands) {
-          const norm = makeKey(c); if (byNorm.has(norm)) return byNorm.get(norm);
-        }
-        for (const [nk, orig] of byNorm.entries()) if (cands.some(c => nk.includes(makeKey(c)))) return orig;
+        for (const c of cands) { const k = normKey(c); if (byNorm.has(k)) return byNorm.get(k); }
+        for (const [nk, orig] of byNorm.entries()) if (cands.some(c => nk.includes(normKey(c)))) return orig;
         return null;
       };
-      const resolved = {
+      return {
         name:      pick("Organization Name","Org Name","Name"),
         website:   pick("Website","URL","Link"),
         type:      pick("Organization Type","Type","Category"),
@@ -165,31 +207,32 @@
         disaster:  pick("Disaster Services","DisasterServices"),
         physical:  pick("Physical Resources","PhysicalResources","Resources"),
       };
-      console.log("Detected field mapping:", resolved);
-      return resolved;
     }
 
+    function normalizeTags(v) {
+      if (!v && v !== 0) return [];
+      if (Array.isArray(v)) return v.map(x => String(x).trim()).filter(Boolean);
+      return String(v).split(/[,;|]/).map(s => s.trim()).filter(Boolean);
+    }
     function uniqueSortedTags(features, fieldKey) {
       const set = new Set();
       for (const f of features) normalizeTags(f.properties?.[fieldKey]).forEach(t => set.add(t));
-      return Array.from(set).sort((a,b) => a.localeCompare(b));
+      return Array.from(set).sort((a,b)=>a.localeCompare(b));
     }
 
     function buildTagList(container, tags, groupKey) {
       container.innerHTML = "";
-      for (const tag of tags) {
-        const id = `${groupKey}-${tag.replace(/\s+/g, "_")}`;
-        const label = document.createElement("label"); label.className = "tag-pill"; label.setAttribute("for", id);
-        const input = document.createElement("input"); input.type = "checkbox"; input.id = id; input.value = tag; input.dataset.group = groupKey;
-        const span = document.createElement("span"); span.textContent = tag;
+      tags.forEach(tag => {
+        const id = `${groupKey}-${tag.replace(/\s+/g,"_")}`;
+        const label = document.createElement('label'); label.className = 'tag-pill'; label.setAttribute('for', id);
+        const input = document.createElement('input'); input.type = 'checkbox'; input.id = id; input.value = tag; input.dataset.group = groupKey;
+        const span = document.createElement('span'); span.textContent = tag;
         label.appendChild(input); label.appendChild(span); container.appendChild(label);
-      }
+      });
     }
-
     function getSelected(groupKey) {
       return Array.from(document.querySelectorAll(`input[type="checkbox"][data-group="${groupKey}"]:checked`)).map(i => i.value);
     }
-
     function featureMatchesSelections(f, sel) {
       const p = f.properties || {};
       const reg = normalizeTags(p[FIELDS.regular]);
@@ -201,13 +244,19 @@
       return true;
     }
 
-    // ===== 30-color palette (HSL evenly spaced) + stable hashing per feature =====
-    const PALETTE = Array.from({length: 30}, (_, i) => `hsl(${(i*12)%360} 70% 45%)`);
-    function hashCode(str) { let h = 0; for (let i=0;i<str.length;i++) { h = (h<<5) - h + str.charCodeAt(i); h |= 0; } return h >>> 0; }
+    // ========= Marker coloring: 30-color palette, unique per church =========
+    const PALETTE30 = [
+      '#1f77b4','#ff7f0e','#2ca02c','#d62728','#9467bd',
+      '#8c564b','#e377c2','#7f7f7f','#bcbd22','#17becf',
+      '#393b79','#637939','#8c6d31','#843c39','#7b4173',
+      '#3182bd','#31a354','#756bb1','#636363','#e6550d',
+      '#9edae5','#c7c7c7','#bc80bd','#ffed6f','#a6cee3',
+      '#b2df8a','#fb9a99','#fdbf6f','#cab2d6','#6a3d9a'
+    ];
+    function hashIndex(str, m){ let h=0; for(let i=0;i<str.length;i++) h=(h*31 + str.charCodeAt(i))|0; return Math.abs(h)%m; }
     function colorForFeature(props) {
-      const key = `${props[FIELDS.name] || ""}|${props[FIELDS.address] || ""}`;
-      const idx = hashCode(key) % PALETTE.length;
-      return PALETTE[idx];
+      const key = `${props[FIELDS.name]||''}|${props[FIELDS.address]||''}`;
+      return PALETTE30[ hashIndex(key, PALETTE30.length) ];
     }
 
     function makePopup(props) {
@@ -232,33 +281,30 @@
           ${contact ? `<div class="field-row"><b>Disaster Contact:</b> ${contact}</div>` : ""}
           ${email ? `<div class="field-row"><b>Email:</b> <a href="mailto:${email}">${email}</a></div>` : ""}
           ${phone ? `<div class="field-row"><b>Phone:</b> <a href="tel:${phone}">${phone}</a></div>` : ""}
+
           ${reg.length ? `<div class="field-row"><b>Regular Services:</b><div class="tag-strip">${chips(reg)}</div></div>` : ""}
-          ${dis.length ? `<div class="field-row"><b>Disaster Services:</b><div class="tag-strip">${chips(dis)}</div></div>` : ""}
-          ${phy.length ? `<div class="field-row"><b>Physical Resources:</b><div class="tag-strip">${chips(phy)}</div></div>` : ""}
+
+          ${dis.length ? `<hr/><div class="field-row"><b>Disaster Services:</b><div class="tag-strip">${chips(dis)}</div></div>` : ""}
+
+          ${phy.length ? `<hr/><div class="field-row"><b>Physical Resources:</b><div class="tag-strip">${chips(phy)}</div></div>` : ""}
         </div>`;
     }
 
-    function clearMarkers() { markersLayer.clearLayers(); }
-
+    const markersLayer = L.layerGroup().addTo(map);
+    function clearMarkers(){ markersLayer.clearLayers(); }
     function drawMarkers(features) {
       clearMarkers();
       const pts = [];
-
       features.forEach(f => {
         const [lng, lat] = f.geometry?.coordinates || [];
         if (typeof lat !== "number" || typeof lng !== "number") return;
-
         const props = f.properties || {};
         const color = colorForFeature(props);
-
-        const marker = L.circleMarker([lat, lng], {
-          radius: 6, weight: 2, color, fillColor: color, opacity: 1, fillOpacity: 0.85
-        });
-        marker.bindPopup(makePopup(props));
-        markersLayer.addLayer(marker);
+        const m = L.circleMarker([lat, lng], { radius: 6, weight: 2, color, fillColor: color, opacity: 1, fillOpacity: 0.85 });
+        m.bindPopup(makePopup(props));
+        markersLayer.addLayer(m);
         pts.push([lat, lng]);
       });
-
       if (pts.length) map.fitBounds(L.latLngBounds(pts).pad(0.08));
     }
 
@@ -270,31 +316,24 @@
       };
       drawMarkers(allFeatures.filter(f => featureMatchesSelections(f, selections)));
     }
-
     function clearFilters() {
       document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
       applyFilters();
     }
 
-    // ========= FETCH & INIT =========
-    fetch(GEOJSON_URL)
+    // ========= Fetch & Init =========
+    fetch(GEOJSON_URL, { cache: 'no-cache' })
       .then(r => r.json())
       .then(data => {
         const features = Array.isArray(data?.features) ? data.features : [];
         allFeatures = features;
+        if (!features.length) return;
 
-        if (!features.length) {
-          console.warn("No features in GeoJSON.");
-          return;
-        }
-
-        // Resolve field names from the first feature
         FIELDS = resolveFieldsFromSample(features[0]?.properties || {});
-
-        // Build filters
         const regTags = uniqueSortedTags(features, FIELDS.regular);
         const disTags = uniqueSortedTags(features, FIELDS.disaster);
         const phyTags = uniqueSortedTags(features, FIELDS.physical);
+
         buildTagList(el("#list-regular"), regTags, "regular");
         buildTagList(el("#list-disaster"), disTags, "disaster");
         buildTagList(el("#list-physical"), phyTags, "physical");
@@ -310,22 +349,10 @@
     el("#applyFilters").addEventListener("click", applyFilters);
     el("#clearFilters").addEventListener("click", clearFilters);
 
-    // Keep legend scroll local
-    const scrollBox = el("#panelScroll");
-    ["wheel","mousewheel","DOMMouseScroll"].forEach(evt =>
-      scrollBox.addEventListener(evt, (e) => e.stopPropagation(), { passive: true })
-    );
-    let touchStartY = 0;
-    scrollBox.addEventListener("touchstart", (e) => { if (e.touches?.length === 1) touchStartY = e.touches[0].clientY; }, { passive: true });
-    scrollBox.addEventListener("touchmove", (e) => {
-      if (e.touches?.length !== 1) return;
-      const dy = e.touches[0].clientY - touchStartY;
-      const atTop = scrollBox.scrollTop === 0;
-      const atBottom = Math.ceil(scrollBox.scrollTop + scrollBox.clientHeight) >= scrollBox.scrollHeight;
-      if ((atTop && dy > 0) || (atBottom && dy < 0)) e.preventDefault();
-      e.stopPropagation();
-    }, { passive: false });
-    el("#filterPanel").addEventListener("pointerdown", (e) => e.stopPropagation());
+    // Keep legend scroll local and prevent map scroll hijack
+    const legendPanel = document.getElementById('legendPanel');
+    L.DomEvent.disableScrollPropagation(legendPanel);
+    L.DomEvent.disableClickPropagation(legendPanel);
   </script>
 </body>
 </html>
