@@ -27,7 +27,8 @@
         'touchpoint.html' : 'a[href="touchpoint.html"]',
         'organizations.html': 'a[href="organizations.html"]',
         'leaders.html'     : 'a[href="leaders.html"]',
-        'networks.html'    : 'a[href="networks.html"]'
+        'networks.html'    : 'a[href="networks.html"]',
+        'disaster_data.html': 'a[href="disaster_data.html"]'   // <--- added
       };
 
       // Highlight exact match
