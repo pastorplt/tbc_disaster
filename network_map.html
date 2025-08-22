@@ -458,7 +458,7 @@
 
     // --- Load Networks & build county-grouped legend ---
     let networksGeoJson;
-    fetch('https://tbc-networks.onrender.com/networks.geojson', { cache: 'no-cache' })
+    fetch('https://api.tbc.city/networks.geojson', { cache: 'no-cache' })
       .then(res => res.json())
       .then(data => {
         const groups = new Map(); // countyName -> array of items
@@ -581,7 +581,7 @@
 
     // --- Counties layer (light yellow) ---
     function styleCounties(){ return { color:'#b59f3b', weight:1, fillColor:'#fff9c4', fillOpacity:0.5 }; }
-    fetch('https://pastorplt.github.io/tbc_map/tbc_counties.geojson', { cache: 'no-cache' })
+    fetch('tbc_counties.geojson', { cache: 'no-cache' })
       .then(res => res.json())
       .then(data => {
         const counties = L.geoJSON(data, { style: styleCounties }).addTo(countiesGroup);
