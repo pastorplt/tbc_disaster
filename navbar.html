@@ -3,6 +3,7 @@
   <div class="nav">
     <a href="index.html" aria-label="TBC Home" class="brand">
       <span class="logo-wrap">
+        <!-- Keep your existing asset path/name -->
         <img src="TBC_full_logo.gif" alt="TBC logo">
       </span>
     </a>
@@ -16,7 +17,7 @@
       <!-- Touchpoint (restored) -->
       <li><a href="touchpoint.html">Touchpoint</a></li>
 
-      <!-- View dropdown (restored as-is) -->
+      <!-- View dropdown (restored) -->
       <li class="dropdown">
         <button class="dropdown-toggle" type="button" aria-haspopup="true" aria-expanded="false">View ▾</button>
         <ul class="dropdown-content" role="menu" aria-label="View submenu">
@@ -26,7 +27,7 @@
         </ul>
       </li>
 
-      <!-- Maps dropdown (new: Networks, Organizations, Disaster Data) -->
+      <!-- Maps dropdown (Networks, Organizations, Disaster Data) -->
       <li class="dropdown">
         <button class="dropdown-toggle" type="button" aria-haspopup="true" aria-expanded="false">Maps ▾</button>
         <ul class="dropdown-content" role="menu" aria-label="Maps submenu">
@@ -36,7 +37,7 @@
         </ul>
       </li>
 
-      <!-- Admin dropdown (new: with POST actions) -->
+      <!-- Admin dropdown (POST actions) -->
       <li class="dropdown">
         <button class="dropdown-toggle" type="button" aria-haspopup="true" aria-expanded="false">Admin ▾</button>
         <ul class="dropdown-content" role="menu" aria-label="Admin submenu">
@@ -51,8 +52,15 @@
 
 <style>
   :root { --brand: #bf3426; --brand-darker: #a22a1f; }
-  /* Full-width bar */
-  .navbar { background: var(--brand); width: 100%; }
+
+  /* Full-width bar (now above Leaflet) */
+  .navbar {
+    background: var(--brand);
+    width: 100%;
+    position: sticky;    /* stays at top */
+    top: 0;
+    z-index: 3000;       /* above Leaflet controls/popups */
+  }
 
   /* Centered row */
   .nav {
@@ -70,23 +78,29 @@
   .nav-links {
     list-style: none; display: flex; align-items: center; gap: 6px;
     margin: 0; padding: 0;
+    position: relative;
+    z-index: 3100;     /* ensure clickable above map */
   }
   .nav-links > li { position: relative; }
-  .nav-links a, .nav-links .dropdown-toggle, .nav-links button.admin-action {
+  .nav-links a,
+  .nav-links .dropdown-toggle,
+  .nav-links button.admin-action {
     color: #fff; text-decoration: none; font-weight: 700;
     padding: 8px 12px; border-radius: 4px; display: block; opacity: .95;
     background: none; border: 0; cursor: pointer; font: inherit;
   }
-  .nav-links a:hover, .nav-links .dropdown-toggle:hover, .nav-links button.admin-action:hover { background: var(--brand-darker); opacity: 1; }
+  .nav-links a:hover,
+  .nav-links .dropdown-toggle:hover,
+  .nav-links button.admin-action:hover { background: var(--brand-darker); opacity: 1; }
   .nav-links a.active { background: var(--brand-darker); opacity: 1; }
 
-  /* Dropdown: align to right so it never clips */
+  /* Dropdowns */
   .dropdown .dropdown-content {
     display: none; position: absolute; top: 100%; right: 0; left: auto;
     background: var(--brand); min-width: 200px; margin-top: 2px;
-    border-radius: 8px; box-shadow: 0 6px 18px rgba(0,0,0,.15); z-index: 1000;
-    padding: 6px 4px;
-    list-style: none;
+    border-radius: 8px; box-shadow: 0 6px 18px rgba(0,0,0,.15);
+    z-index: 3200;     /* higher than map + other nav */
+    padding: 6px 4px; list-style: none;
   }
   .dropdown .dropdown-content li { list-style: none; margin: 0; padding: 0; }
   .dropdown.open .dropdown-content { display: block; }
@@ -99,6 +113,7 @@
   /* Hamburger */
   .hamburger {
     display: none; width: 40px; height: 36px; border: 0; background: transparent; cursor: pointer;
+    position: relative; z-index: 3400; /* always clickable */
   }
   .hamburger span {
     display:block; height:3px; margin:6px 0; background:#fff; border-radius:2px;
@@ -113,11 +128,12 @@
       flex-direction: column; align-items: stretch; gap: 4px;
       background: var(--brand); padding: 8px; display: none;
       border-top: 1px solid rgba(255,255,255,.15);
+      z-index: 3300;  /* above map & Leaflet legend */
     }
     .nav-links.open { display: flex; }
     .nav-links a, .nav-links .dropdown-toggle, .nav-links button.admin-action { padding: 10px 12px; }
 
-    /* Dropdown becomes inline (stacked) in the mobile sheet */
+    /* Dropdown becomes stacked inside sheet */
     .dropdown .dropdown-content {
       position: static; display: none; box-shadow: none; margin-top: 0; padding: 4px 0;
       background: transparent;
@@ -125,111 +141,4 @@
     .dropdown.open .dropdown-content { display: block; }
     .dropdown-content a, .dropdown-content button.admin-action { padding-left: 20px; }
   }
-
-  /* Lightweight toast for admin POST feedback */
-  .toast {
-    position: fixed; right: 16px; bottom: 16px; z-index: 1100;
-    background: rgba(17,17,17,.95); color: #fff; padding: 10px 14px; border-radius: 10px;
-    font-size: 13px; box-shadow: 0 10px 24px rgba(0,0,0,.3);
-  }
 </style>
-
-<script>
-  (function(){
-    const nav     = document.querySelector('.nav');
-    const burger  = nav.querySelector('.hamburger');
-    const menu    = nav.querySelector('#navMenu');
-
-    // Handle multiple dropdowns
-    const dropdowns = Array.from(nav.querySelectorAll('.dropdown'));
-    const toggles   = dropdowns.map(d => d.querySelector('.dropdown-toggle'));
-
-    // Hamburger toggle
-    function closeMenu(){ menu.classList.remove('open'); burger.setAttribute('aria-expanded','false'); }
-    function openMenu(){ menu.classList.add('open'); burger.setAttribute('aria-expanded','true'); }
-    burger.addEventListener('click', function(){
-      const isOpen = menu.classList.contains('open'); isOpen ? closeMenu() : openMenu();
-    });
-
-    // Dropdown toggles (desktop & mobile sheet)
-    toggles.forEach((toggle, idx) => {
-      const dd = dropdowns[idx];
-      toggle.addEventListener('click', function(e){
-        e.stopPropagation();
-        const isOpen = dd.classList.contains('open');
-        dropdowns.forEach(d => d.classList.remove('open'));
-        toggles.forEach(t => t.setAttribute('aria-expanded','false'));
-        if (!isOpen) { dd.classList.add('open'); toggle.setAttribute('aria-expanded','true'); }
-      });
-    });
-
-    // Click outside to close
-    document.addEventListener('click', function(e){
-      if (!nav.contains(e.target)) {
-        dropdowns.forEach(d => d.classList.remove('open'));
-        toggles.forEach(t => t.setAttribute('aria-expanded','false'));
-        closeMenu();
-      }
-    });
-
-    // ESC to close
-    document.addEventListener('keydown', function(e){
-      if (e.key === 'Escape') {
-        dropdowns.forEach(d => d.classList.remove('open'));
-        toggles.forEach(t => t.setAttribute('aria-expanded','false'));
-        closeMenu();
-      }
-    });
-
-    // Reset when resizing
-    let lastWide = window.innerWidth > 720;
-    window.addEventListener('resize', function(){
-      const wide = window.innerWidth > 720;
-      if (wide !== lastWide) {
-        dropdowns.forEach(d => d.classList.remove('open'));
-        toggles.forEach(t => t.setAttribute('aria-expanded','false'));
-        closeMenu();
-        lastWide = wide;
-      }
-    });
-
-    /* ===== Admin POST helpers (Regen buttons) ===== */
-    const REGEN_TOKEN = '2025';
-
-    function showToast(msg) {
-      const t = document.createElement('div');
-      t.className = 'toast';
-      t.textContent = msg;
-      document.body.appendChild(t);
-      setTimeout(() => { t.remove(); }, 2500);
-    }
-
-    async function postAdmin(url) {
-      try {
-        const resp = await fetch(url, {
-          method: 'POST',
-          headers: { 'Authorization': 'Bearer ' + REGEN_TOKEN, 'Content-Type': 'application/json' }
-        });
-        const txt = await resp.text();
-        if (!resp.ok) {
-          console.error('Admin error', resp.status, txt);
-          showToast(`Failed: ${resp.status}`);
-          return;
-        }
-        let msg = 'Done';
-        try { const data = JSON.parse(txt); if (data?.ok) msg = `Success (${data.features ?? 'ok'})`; } catch {}
-        showToast(msg);
-      } catch (e) {
-        console.error('Admin exception', e);
-        showToast('Request error');
-      }
-    }
-
-    document.addEventListener('click', (e) => {
-      const btn = e.target.closest('.admin-action');
-      if (!btn) return;
-      e.preventDefault();
-      postAdmin(btn.getAttribute('data-url'));
-    });
-  })();
-</script>
