@@ -3,51 +3,20 @@
   const host = document.getElementById('navbar-include');
   if (!host) return;
 
-  // Fetch + inject (cache-bust for iOS)
-  const res = await fetch('navbar.html?v=clean1', { cache: 'no-cache' });
+  // Fetch & inject (cache-bust for iOS)
+  const res = await fetch('navbar.html?v=cssonly1', { cache: 'no-cache' });
   if (!res.ok) { console.error('navbar fetch failed:', res.status); return; }
   host.innerHTML = await res.text();
 
-  // Elements
-  const root   = host.querySelector('#tbc-navbar');
-  const burger = root.querySelector('.tbc-hamburger');
-  const nav    = root.querySelector('.tbc-nav');
+  const root = host.querySelector('#tbc-navbar');
+  if (!root) return;
 
-  // Hamburger toggle (iOS-safe)
-  let lastTouch = 0;
-  const isRecentTouch = () => Date.now() - lastTouch < 500;
-  const openNav  = () => { nav.classList.add('open');  burger.setAttribute('aria-expanded','true'); };
-  const closeNav = () => { nav.classList.remove('open'); burger.setAttribute('aria-expanded','false'); };
-
-  burger.style.webkitTapHighlightColor = 'transparent';
-  burger.style.touchAction = 'manipulation';
-
-  if (window.PointerEvent) {
-    burger.addEventListener('pointerup', (e) => {
-      if (e.pointerType === 'touch') lastTouch = Date.now();
-      nav.classList.contains('open') ? closeNav() : openNav();
-    }, { passive: true });
-  }
-  burger.addEventListener('touchend', (e) => {
-    lastTouch = Date.now();
-    e.preventDefault(); e.stopPropagation();
-    nav.classList.contains('open') ? closeNav() : openNav();
-  }, { passive: false });
-  burger.addEventListener('click', () => {
-    if (isRecentTouch()) return;
-    nav.classList.contains('open') ? closeNav() : openNav();
-  }, { passive: true });
-
-  // Close nav when clicking outside or on resize / Esc
-  document.addEventListener('click', (e) => { if (!root.contains(e.target)) closeNav(); }, { passive: true });
-  document.addEventListener('touchend', (e) => { if (!root.contains(e.target)) closeNav(); }, { passive: true });
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeNav(); });
-
-  let lastWide = window.innerWidth > 720;
-  window.addEventListener('resize', () => {
-    const wide = window.innerWidth > 720;
-    if (wide !== lastWide) { closeNav(); lastWide = wide; }
-  }, { passive: true });
+  // Close the mobile menu when clicking a link (so it doesn't stay open)
+  const toggle = root.querySelector('#tbcNavToggle');
+  root.addEventListener('click', (e) => {
+    const a = e.target.closest('a');
+    if (a && toggle && toggle.checked) toggle.checked = false;
+  });
 
   // Admin POST actions
   const TOKEN = '2025';
@@ -65,7 +34,10 @@
     if (!btn) return;
     e.preventDefault();
     try {
-      const resp = await fetch(btn.dataset.url, { method:'POST', headers:{ 'Authorization':'Bearer '+TOKEN, 'Content-Type':'application/json' } });
+      const resp = await fetch(btn.dataset.url, {
+        method: 'POST',
+        headers: { 'Authorization':'Bearer '+TOKEN, 'Content-Type':'application/json' }
+      });
       const txt = await resp.text();
       if (!resp.ok) return toast(`Failed: ${resp.status}`);
       try { const data = JSON.parse(txt); toast(data?.ok ? `Success (${data.features ?? 'ok'})` : 'Done'); }
