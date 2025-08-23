@@ -123,28 +123,36 @@
     const menu = nav.querySelector('#navMenu');
     const dropdowns = nav.querySelectorAll('.dropdown');
 
-    // Hamburger toggle - enhanced for iOS Chrome compatibility
+    // Hamburger toggle - iOS Chrome compatible
     function closeMenu(){ 
       menu.classList.remove('open'); 
       burger.setAttribute('aria-expanded','false');
-      burger.style.backgroundColor = 'transparent';
     }
     function openMenu(){ 
       menu.classList.add('open'); 
       burger.setAttribute('aria-expanded','true');
-      burger.style.backgroundColor = 'rgba(255,255,255,0.1)';
     }
     
-    // Use both click and touchend events for better mobile compatibility
     function handleMenuToggle(e) {
       e.preventDefault();
-      e.stopPropagation();
       const isOpen = menu.classList.contains('open');
       isOpen ? closeMenu() : openMenu();
     }
     
-    burger.addEventListener('click', handleMenuToggle);
-    burger.addEventListener('touchend', handleMenuToggle);
+    // Use touchstart for better iOS compatibility, with click fallback
+    let touchStarted = false;
+    
+    burger.addEventListener('touchstart', function(e) {
+      touchStarted = true;
+      handleMenuToggle(e);
+    });
+    
+    burger.addEventListener('click', function(e) {
+      if (!touchStarted) {
+        handleMenuToggle(e);
+      }
+      touchStarted = false;
+    });
 
     // Handle multiple dropdowns
     dropdowns.forEach(function(dropdown) {
