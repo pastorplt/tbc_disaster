@@ -6,17 +6,17 @@
         <span class="tbc-logo"><img src="TBC_full_logo.gif" alt="TBC logo" /></span>
       </a>
 
-      <!-- Hamburger (shown on mobile) -->
-      <button class="tbc-hamburger" type="button" aria-controls="tbcNav" aria-expanded="false" aria-label="Open menu">
+      <!-- CSS-only hamburger: input + label -->
+      <input id="tbcNavToggle" class="tbc-toggle" type="checkbox" aria-hidden="true" />
+      <label for="tbcNavToggle" class="tbc-hamburger" aria-controls="tbcNav" aria-label="Toggle menu">
         <span></span><span></span><span></span>
-      </button>
+      </label>
 
       <!-- Links -->
       <nav id="tbcNav" class="tbc-nav" aria-label="Primary">
         <ul class="tbc-links">
           <li><a href="touchpoint.html">Touchpoint</a></li>
 
-          <!-- View (native details) -->
           <li>
             <details class="tbc-group">
               <summary>View</summary>
@@ -28,7 +28,6 @@
             </details>
           </li>
 
-          <!-- Maps -->
           <li>
             <details class="tbc-group">
               <summary>Maps</summary>
@@ -40,7 +39,6 @@
             </details>
           </li>
 
-          <!-- Admin -->
           <li>
             <details class="tbc-group">
               <summary>Admin</summary>
@@ -57,9 +55,9 @@
   </header>
 
   <style>
-    /* ===== Scope everything under #tbc-navbar to avoid conflicts ===== */
-    :root { --tbc-brand: #bf3426; --tbc-brand-dk: #a22a1f; }
+    :root { --tbc-brand:#bf3426; --tbc-brand-dk:#a22a1f; }
 
+    /* Layering so it beats Leaflet */
     #tbc-navbar { position: relative; z-index: 4000; }
     #tbc-navbar .tbc-bar { background: var(--tbc-brand); position: sticky; top: 0; z-index: 4100; width: 100%; }
     #tbc-navbar .tbc-row {
@@ -69,54 +67,63 @@
     }
 
     /* Brand */
-    #tbc-navbar .tbc-brand { display: inline-flex; align-items: center; text-decoration: none; }
+    #tbc-navbar .tbc-brand { display:inline-flex; align-items:center; text-decoration:none; }
     #tbc-navbar .tbc-logo { background:#000; padding:4px; border-radius:6px; display:inline-flex; }
-    #tbc-navbar .tbc-logo img { height: 36px; width: auto; display:block; }
+    #tbc-navbar .tbc-logo img { height:36px; width:auto; display:block; }
 
-    /* Hamburger */
-    #tbc-navbar .tbc-hamburger {
-      display: none; width: 48px; height: 48px; border: 0; background: transparent; padding: 0;
-      margin-left: auto; cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation;
-      position: relative; z-index: 5000; align-items: center; justify-content: center;
+    /* Hide the checkbox */
+    #tbc-navbar .tbc-toggle { position:absolute; opacity:0; pointer-events:none; }
+
+    /* Hamburger (label for the checkbox) */
+    #tbc-navbar .tbc-hamburger{
+      display:none; width:48px; height:48px; margin-left:auto; cursor:pointer;
+      position:relative; z-index:5000; -webkit-tap-highlight-color:transparent; touch-action:manipulation;
+      align-items:center; justify-content:center;
     }
-    #tbc-navbar .tbc-hamburger span { display:block; height:3px; width:24px; margin:4px 0; background:#fff; border-radius:2px; pointer-events:none; }
+    #tbc-navbar .tbc-hamburger span{
+      display:block; height:3px; width:26px; margin:5px auto; background:#fff; border-radius:2px; pointer-events:none;
+    }
 
-    /* Nav links */
-    #tbc-navbar .tbc-nav { position: relative; z-index: 4200; }
-    #tbc-navbar .tbc-links { list-style:none; display:flex; gap:8px; margin:0; padding:0; align-items:center; }
-    #tbc-navbar .tbc-links > li { position: relative; }
-    #tbc-navbar .tbc-links a, #tbc-navbar .tbc-group > summary, #tbc-navbar .tbc-admin {
+    /* Desktop nav */
+    #tbc-navbar .tbc-nav { position:relative; z-index:4200; }
+    #tbc-navbar .tbc-links{ list-style:none; display:flex; gap:8px; margin:0; padding:0; align-items:center; }
+    #tbc-navbar .tbc-links > li { position:relative; }
+    #tbc-navbar .tbc-links a, #tbc-navbar .tbc-group > summary, #tbc-navbar .tbc-admin{
       color:#fff; font-weight:700; text-decoration:none; background:none; border:0; cursor:pointer;
       padding:8px 12px; border-radius:4px; display:block;
     }
-    #tbc-navbar .tbc-links a:hover, #tbc-navbar .tbc-group > summary:hover, #tbc-navbar .tbc-admin:hover { background: var(--tbc-brand-dk); }
+    #tbc-navbar .tbc-links a:hover, #tbc-navbar .tbc-group > summary:hover, #tbc-navbar .tbc-admin:hover{ background:var(--tbc-brand-dk); }
 
-    /* Dropdowns via details */
-    #tbc-navbar .tbc-group { position: relative; }
-    #tbc-navbar .tbc-group > summary { list-style:none; }
-    #tbc-navbar .tbc-group > summary::-webkit-details-marker { display:none; }
-    #tbc-navbar .tbc-panel {
-      position: absolute; top: 100%; right: 0; min-width: 200px;
-      background: var(--tbc-brand); border-radius: 8px; box-shadow: 0 6px 18px rgba(0,0,0,.15);
-      padding: 6px; display: none; z-index: 4400;
+    /* Dropdowns via <details> */
+    #tbc-navbar .tbc-group{ position:relative; }
+    #tbc-navbar .tbc-group > summary{ list-style:none; }
+    #tbc-navbar .tbc-group > summary::-webkit-details-marker{ display:none; }
+    #tbc-navbar .tbc-panel{
+      position:absolute; top:100%; right:0; min-width:200px; background:var(--tbc-brand);
+      border-radius:8px; box-shadow:0 6px 18px rgba(0,0,0,.15); padding:6px; display:none; z-index:4400;
     }
-    #tbc-navbar .tbc-group[open] > .tbc-panel { display: block; }
-    #tbc-navbar .tbc-panel a, #tbc-navbar .tbc-panel .tbc-admin { border-radius:6px; }
-    #tbc-navbar .tbc-panel a:hover, #tbc-navbar .tbc-panel .tbc-admin:hover { background: var(--tbc-brand-dk); }
+    #tbc-navbar .tbc-group[open] > .tbc-panel{ display:block; }
+    #tbc-navbar .tbc-panel a, #tbc-navbar .tbc-panel .tbc-admin{ border-radius:6px; }
+    #tbc-navbar .tbc-panel a:hover, #tbc-navbar .tbc-panel .tbc-admin:hover{ background:var(--tbc-brand-dk); }
 
-    /* Mobile: links stack under bar, dropdown panels inline */
-    @media (max-width: 720px) {
-      #tbc-navbar .tbc-hamburger { display: inline-flex; }
-      #tbc-navbar .tbc-nav { position: absolute; left:0; right:0; top:60px; display:none; }
-      #tbc-navbar .tbc-nav.open { display:block; }
-      #tbc-navbar .tbc-links { flex-direction: column; align-items: stretch; gap:6px; background: var(--tbc-brand); padding:8px; border-top: 1px solid rgba(255,255,255,.15); }
-      #tbc-navbar .tbc-group .tbc-panel { position: static; box-shadow:none; padding: 4px 0; }
-      #tbc-navbar .tbc-panel a, #tbc-navbar .tbc-panel .tbc-admin { padding-left: 20px; }
+    /* Mobile: show hamburger, stack menu; checkbox controls visibility */
+    @media (max-width: 720px){
+      #tbc-navbar .tbc-hamburger{ display:inline-flex; }
+      #tbc-navbar .tbc-nav{ position:absolute; left:0; right:0; top:60px; display:none; }
+      #tbc-navbar .tbc-links{
+        flex-direction:column; align-items:stretch; gap:6px; background:var(--tbc-brand);
+        padding:8px; border-top:1px solid rgba(255,255,255,.15);
+      }
+      #tbc-navbar .tbc-group .tbc-panel{ position:static; box-shadow:none; padding:4px 0; }
+      #tbc-navbar .tbc-panel a, #tbc-navbar .tbc-panel .tbc-admin{ padding-left:20px; }
+
+      /* OPEN when checkbox is checked */
+      #tbc-navbar #tbcNavToggle:checked ~ .tbc-nav{ display:block; }
     }
 
-    /* Keep Leaflet below nav on map pages */
-    .leaflet-container { z-index: 0 !important; }
-    .leaflet-control-container, .leaflet-top, .leaflet-bottom { z-index: 900 !important; }
-    .map-title { z-index: 1000 !important; }
+    /* Keep Leaflet beneath nav on map pages */
+    .leaflet-container{ z-index:0 !important; }
+    .leaflet-control-container, .leaflet-top, .leaflet-bottom{ z-index:900 !important; }
+    .map-title{ z-index:1000 !important; }
   </style>
 </div>
