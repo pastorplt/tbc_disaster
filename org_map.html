@@ -1,0 +1,466 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>TBC Organizations Map</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+
+  <style>
+    html, body { height: 100%; margin: 0; }
+    #map { height: calc(100% - 60px); }
+
+    /* ===== Header / Nav (shared include) ===== */
+    header { background-color: #bf3426; color: #fff; }
+    .nav { height: 60px; display: flex; align-items: center; gap: 16px; padding: 0 16px; max-width: 1100px; margin: 0 auto; }
+    .nav .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: #fff; font-weight: 800; letter-spacing: .3px; }
+    .nav .brand img { height: 36px; width: auto; display: block; }
+    .nav-links { display: flex; align-items: center; gap: 18px; margin-left: auto; }
+    .nav-links a { color: #fff; text-decoration: none; font-weight: 700; padding: 6px 4px; border-radius: 4px; opacity: .9; }
+    .nav-links a:hover { text-decoration: underline; opacity: 1; }
+    .nav-links a.active { text-decoration: underline; opacity: 1; }
+    .nav, .nav a, .nav .brand { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif !important; }
+
+    /* Title chip (centered) */
+    .map-title {
+      position: absolute; top: 70px; left: 50%; transform: translateX(-50%);
+      z-index: 1000;
+      font: 40px/1.2 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      font-weight: 800; color: #111; text-align: center;
+      background: rgba(255,255,255,0.9);
+      padding: 14px 25px; border-radius: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      pointer-events: none;
+    }
+
+    .leaflet-interactive { cursor: pointer; }
+
+    /* ============ Legend / Filters (desktop panel + mobile side sheet) ============ */
+    .legend-panel {
+      position: absolute;
+      top: 70px; left: 10px;
+      width: 300px; max-height: calc(100% - 90px);
+      overflow-y: auto;
+      z-index: 1000;
+      background: rgba(255,255,255,0.95);
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(0,0,0,.12);
+      padding: 10px;
+      font: 13px/1.35 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+      touch-action: pan-y;
+    }
+    .legend-header { display: none; }
+    .legend-title { font-weight: 700; font-size: 14px; margin: 4px 0 8px; color: #111; }
+
+    details { margin-bottom: 8px; border-radius: 8px; background: #f8fafc; border: 1px solid #e5e7eb; padding: 6px 8px; }
+    details[open] { background: #eef2ff; }
+    summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 4px; font-weight: 600; }
+    summary::-webkit-details-marker { display: none; }
+    .chev { transition: transform .2s ease; }
+    details[open] .chev { transform: rotate(90deg); }
+
+    .tag-list { display: grid; grid-template-columns: 1fr; gap: 6px; margin-top: 8px; }
+    .tag-pill { display: inline-flex; align-items: center; gap: 8px; border: 1px solid #e3e6ef; border-radius: 999px; padding: 6px 10px; background: #fff; font-size: 13px; user-select: none; cursor: pointer; }
+    .tag-pill input { cursor: pointer; }
+
+    .panel-actions { display: flex; gap: 8px; padding-top: 8px; margin-top: 8px; border-top: 1px solid #e5e7eb; }
+    .btn { border: 1px solid #d9deea; background: #fff; padding: 8px 12px; border-radius: 10px; font-size: 13px; cursor: pointer; }
+    .btn-primary { border-color: #3b82f6; background: #3b82f6; color: #fff; }
+
+    /* Popup content */
+    .popup { font: 13px/1.35 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; min-width: 240px; max-width: 360px; color: #111; }
+    .popup h3 { font-size: 15px; margin: 0 0 6px; font-weight: 700; }
+    .field-row { margin: 4px 0; }
+    .field-row b { font-weight: 600; }
+    .tag-strip { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+    .chip { display: inline-block; padding: 3px 8px; border-radius: 999px; border: 1px solid #e1e5ee; background: #f8fafc; font-size: 12px; }
+    .popup hr { border:0; border-top:1px solid #e9ecef; margin:8px 0; }
+
+    /* Mobile-only button to toggle legend */
+    .legend-toggle { display: none; }
+
+    /* ---------------- Mobile (<768px) ---------------- */
+    @media (max-width: 767.98px) {
+      .map-title { font-size: 22px; padding: 10px 16px; border-radius: 14px; }
+
+      .legend-panel {
+        position: fixed; top: 0; bottom: 0; left: 0; right: auto;
+        width: 50vw; max-width: none; height: 100vh;
+        border-radius: 0 12px 12px 0; padding: 8px 10px 12px;
+        transform: translateX(-100%); transition: transform 220ms ease;
+        border-left: 0; border-right: 1px solid #e5e7eb;
+        box-shadow: 0 4px 16px rgba(0,0,0,.12);
+        background: rgba(255,255,255,0.98);
+        -webkit-overflow-scrolling: touch; overscroll-behavior: contain; touch-action: pan-y;
+      }
+      .legend-panel.open { transform: translateX(0); }
+
+      .legend-header {
+        display: flex; align-items: center; justify-content: space-between;
+        gap: 8px; padding: 6px 2px 8px; position: sticky; top: 0;
+        background: rgba(255,255,255,0.98); z-index: 2;
+      }
+      .legend-grabber { width: 40px; height: 4px; border-radius: 2px; background: #cbd5e1; margin: 4px auto 8px auto; }
+      .legend-title { margin: 0 0 8px; }
+      .legend-close-btn { border: none; background: #f3f4f6; color: #111; border-radius: 8px; padding: 6px 10px; font-size: 12px; cursor: pointer; }
+      .legend-close-btn:active { transform: translateY(1px); }
+
+      .desktop-only { display: none; }
+
+      .legend-toggle {
+        display: inline-flex; align-items: center; justify-content: center;
+        position: fixed; left: 12px; bottom: 12px; z-index: 1001;
+        background: #111; color: #fff; border: 0;
+        border-radius: 999px; padding: 10px 14px; font: 14px/1 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+        box-shadow: 0 6px 18px rgba(0,0,0,.2);
+      }
+      .legend-toggle:active { transform: translateY(1px); }
+
+      .leaflet-control-zoom { display: none !important; }
+    }
+
+    /* Layer control headings */
+    .leaflet-control-layers .basemap-heading,
+    .leaflet-control-layers .overlays-heading { font-weight: 600; margin-bottom: 4px; display: block; }
+  </style>
+</head>
+<body>
+  <!-- Shared header / nav -->
+  <div id="navbar-include"></div>
+  <script src="include-nav.js"></script>
+
+  <div id="map">
+    <div class="map-title">TBC Organizations</div>
+
+    <!-- Mobile FAB -->
+    <button id="legendToggle" class="legend-toggle" type="button" aria-expanded="false" aria-controls="legendPanel">
+      Filters
+    </button>
+
+    <!-- Filters panel (desktop + mobile sheet) -->
+    <aside class="legend-panel" id="legendPanel" aria-label="Filters">
+      <!-- Mobile-only header -->
+      <div class="legend-header">
+        <div class="legend-grabber" aria-hidden="true"></div>
+        <div class="legend-title">Filters</div>
+        <button class="legend-close-btn" type="button" id="legendClose">Close</button>
+      </div>
+
+      <!-- Desktop title -->
+      <div class="legend-title desktop-only">Filters</div>
+
+      <!-- Collapsible, collapsed by default -->
+      <details id="grp-county"><summary><span>County</span><span class="chev">▶</span></summary><div class="tag-list" id="list-county"></div></details>
+      <details id="grp-network"><summary><span>Network Name</span><span class="chev">▶</span></summary><div class="tag-list" id="list-network"></div></details>
+      <details id="grp-type"><summary><span>Organization Type</span><span class="chev">▶</span></summary><div class="tag-list" id="list-type"></div></details>
+      <details id="grp-category"><summary><span>Category</span><span class="chev">▶</span></summary><div class="tag-list" id="list-category"></div></details>
+      <details id="grp-denomination"><summary><span>Denomination</span><span class="chev">▶</span></summary><div class="tag-list" id="list-denomination"></div></details>
+
+      <div class="panel-actions">
+        <button class="btn" id="clearFilters">Clear filters</button>
+        <button class="btn btn-primary" id="applyFilters">Apply</button>
+      </div>
+    </aside>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script>
+    // ===== Basemaps (same set/labels) =====
+    const esriGray = L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+      { maxZoom: 20, attribution: 'Tiles &copy; Esri' }
+    );
+    const cartoPositron = L.tileLayer(
+      'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+      { maxZoom: 20, subdomains: 'abcd', attribution: '&copy; OpenStreetMap contributors &copy; CARTO' }
+    );
+    const esriWorldStreet = L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+      { maxZoom: 20, attribution: 'Tiles &copy; Esri' }
+    );
+    const esriTopo = L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
+      { maxZoom: 20, attribution: 'Tiles &copy; Esri' }
+    );
+
+    const map = L.map('map', {
+      center: [37.8, -122.3],
+      zoom: 9,
+      layers: [esriGray],
+      preferCanvas: true
+    });
+
+    const baseMaps = { 'Light': esriGray, 'Medium': cartoPositron, 'Street': esriWorldStreet, 'Topo': esriTopo };
+    const layerControl = L.control.layers(baseMaps, null, { position: 'topright', collapsed: false }).addTo(map);
+    const controlEl = layerControl.getContainer();
+    const baseList = controlEl.querySelector('.leaflet-control-layers-base');
+    if (baseList) { const h = document.createElement('div'); h.className = 'basemap-heading'; h.textContent = 'Basemap'; baseList.prepend(h); }
+
+    // ===== Data config =====
+    const GEOJSON_URL = "https://api.tbc.city/orgs/organization_map.geojson";
+
+    let allFeatures = [];
+    let FIELDS = {};
+
+    const el = (s) => document.querySelector(s);
+    const $ = (s) => document.querySelectorAll(s);
+
+    // Robust field resolver (handles snake_case -> labels)
+    const normKey = (s) => String(s||'').toLowerCase().replace(/[\s._-]+/g,'').replace(/[^\p{L}\p{N}]/gu,'');
+    function resolveFieldsFromSample(props) {
+      const keys = Object.keys(props||{});
+      const byNorm = new Map(keys.map(k => [normKey(k), k]));
+      const pick = (...c) => {
+        for (const cand of c) { const k = normKey(cand); if (byNorm.has(k)) return byNorm.get(k); }
+        for (const [nk, orig] of byNorm.entries()) if (c.some(cand => nk.includes(normKey(cand)))) return orig;
+        return null;
+      };
+      return {
+        name:        pick("Organization Name","Org Name","Name","organization_name"),
+        website:     pick("Website","URL","Link","website"),
+        category:    pick("Category","Categories","category"),
+        denomination:pick("Denomination","Denominations","denomination"),
+        type:        pick("Organization Type","Type","organization_type"),
+        address:     pick("Full Address","Address","full_address"),
+        county:      pick("County","county"),
+        network:     pick("Network Name","Network","network_name"),
+      };
+    }
+
+    // Tag helpers (split on common separators)
+    function normalizeTags(v) {
+      if (!v && v !== 0) return [];
+      if (Array.isArray(v)) return v.map(x => String(x).trim()).filter(Boolean);
+      return String(v).split(/[,;|]/).map(s => s.trim()).filter(Boolean);
+    }
+    function uniqueSortedTags(features, fieldKey) {
+      const set = new Set();
+      for (const f of features) normalizeTags(f.properties?.[fieldKey]).forEach(t => set.add(t));
+      return Array.from(set).sort((a,b)=>a.localeCompare(b, undefined, {sensitivity:'base'}));
+    }
+    function buildTagList(container, tags, groupKey) {
+      container.innerHTML = "";
+      tags.forEach(tag => {
+        const id = `${groupKey}-${tag.replace(/\s+/g,"_")}`;
+        const label = document.createElement('label'); label.className = 'tag-pill'; label.setAttribute('for', id);
+        const input = document.createElement('input'); input.type = 'checkbox'; input.id = id; input.value = tag; input.dataset.group = groupKey;
+        const span = document.createElement('span'); span.textContent = tag;
+        label.appendChild(input); label.appendChild(span); container.appendChild(label);
+      });
+    }
+    function getSelected(groupKey) {
+      return Array.from(document.querySelectorAll(`input[type="checkbox"][data-group="${groupKey}"]:checked`)).map(i => i.value);
+    }
+
+    function featureMatchesSelections(f, sel) {
+      const p = f.properties || {};
+      const county = normalizeTags(p[FIELDS.county]);
+      const network = normalizeTags(p[FIELDS.network]);
+      const type = normalizeTags(p[FIELDS.type]);
+      const category = normalizeTags(p[FIELDS.category]);
+      const denom = normalizeTags(p[FIELDS.denomination]);
+
+      if (sel.county.length && !sel.county.some(t => county.includes(t))) return false;
+      if (sel.network.length && !sel.network.some(t => network.includes(t))) return false;
+      if (sel.type.length && !sel.type.some(t => type.includes(t))) return false;
+      if (sel.category.length && !sel.category.some(t => category.includes(t))) return false;
+      if (sel.denomination.length && !sel.denomination.some(t => denom.includes(t))) return false;
+
+      return true;
+    }
+
+    // 30-color palette (stable color per org)
+    const PALETTE30 = [
+      '#1f77b4','#ff7f0e','#2ca02c','#d62728','#9467bd',
+      '#8c564b','#e377c2','#7f7f7f','#bcbd22','#17becf',
+      '#393b79','#637939','#8c6d31','#843c39','#7b4173',
+      '#3182bd','#31a354','#756bb1','#636363','#e6550d',
+      '#9edae5','#c7c7c7','#bc80bd','#ffed6f','#a6cee3',
+      '#b2df8a','#fb9a99','#fdbf6f','#cab2d6','#6a3d9a'
+    ];
+    function hashIndex(str, m){ let h=0; for(let i=0;i<str.length;i++) h=(h*31 + str.charCodeAt(i))|0; return Math.abs(h)%m; }
+    function colorForFeature(props) {
+      const key = `${props[FIELDS.name]||''}|${props[FIELDS.address]||''}`;
+      return PALETTE30[ hashIndex(key, PALETTE30.length) ];
+    }
+
+    function makePopup(props) {
+      const name = props[FIELDS.name] || "(No name)";
+      const website = props[FIELDS.website];
+      const orgType = props[FIELDS.type];
+      const address = props[FIELDS.address];
+      const county = props[FIELDS.county];
+      const network = props[FIELDS.network];
+
+      // Category & Denomination chips (no labels, just the chips)
+      const categories = normalizeTags(props[FIELDS.category]);
+      const denoms = normalizeTags(props[FIELDS.denomination]);
+      const chips = arr => arr.map(t => `<span class="chip">${t}</span>`).join(" ");
+
+      return `
+        <div class="popup">
+          <h3>${name}</h3>
+          ${orgType ? `<div class="field-row"><b>Organization Type:</b> ${orgType}</div>` : ""}
+          ${address ? `<div class="field-row"><b>Address:</b> ${address}</div>` : ""}
+          ${website ? `<div class="field-row"><b>Website:</b> <a href="${website}" target="_blank" rel="noopener">${website}</a></div>` : ""}
+          ${county ? `<div class="field-row"><b>County:</b> ${county}</div>` : ""}
+          ${network ? `<div class="field-row"><b>Network:</b> ${network}</div>` : ""}
+
+          ${(categories.length || denoms.length) ? `<hr/>` : ""}
+
+          ${categories.length ? `<div class="tag-strip">${chips(categories)}</div>` : ""}
+          ${denoms.length ? `<div class="tag-strip" style="${categories.length ? 'margin-top:6px;' : ''}">${chips(denoms)}</div>` : ""}
+        </div>`;
+    }
+
+    const markersLayer = L.layerGroup().addTo(map);
+    function clearMarkers(){ markersLayer.clearLayers(); }
+    function drawMarkers(features) {
+      clearMarkers();
+      const pts = [];
+      features.forEach(f => {
+        const [lng, lat] = f.geometry?.coordinates || [];
+        if (typeof lat !== "number" || typeof lng !== "number") return;
+        const props = f.properties || {};
+        const color = colorForFeature(props);
+        const m = L.circleMarker([lat, lng], { radius: 6, weight: 2, color, fillColor: color, opacity: 1, fillOpacity: 0.85 });
+        m.bindPopup(makePopup(props));
+        markersLayer.addLayer(m);
+        pts.push([lat, lng]);
+      });
+      if (pts.length) map.fitBounds(L.latLngBounds(pts).pad(0.08));
+    }
+
+    function applyFilters() {
+      const selections = {
+        county:      getSelected("county"),
+        network:     getSelected("network"),
+        type:        getSelected("type"),
+        category:    getSelected("category"),
+        denomination:getSelected("denomination"),
+      };
+      drawMarkers(allFeatures.filter(f => featureMatchesSelections(f, selections)));
+      collapseAllSections(); // collapse after applying
+    }
+    function clearFilters() {
+      document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+      applyFilters();
+    }
+    function collapseAllSections() {
+      document.querySelectorAll('#legendPanel details[open]').forEach(d => d.removeAttribute('open'));
+    }
+
+    // ===== URL params: ?county=...,?network=... (comma-separated allowed) =====
+    function preselectFromParams() {
+      const params = new URLSearchParams(location.search);
+      const preCounty = (params.get('county')||'').split(',').map(s=>s.trim()).filter(Boolean);
+      const preNetwork = (params.get('network')||'').split(',').map(s=>s.trim()).filter(Boolean);
+
+      // Pre-check matching boxes, if present
+      preCounty.forEach(v => {
+        const cb = Array.from($('input[type="checkbox"][data-group="county"]')).find(i => i.value.toLowerCase() === v.toLowerCase());
+        if (cb) cb.checked = true;
+      });
+      preNetwork.forEach(v => {
+        const cb = Array.from($('input[type="checkbox"][data-group="network"]')).find(i => i.value.toLowerCase() === v.toLowerCase());
+        if (cb) cb.checked = true;
+      });
+
+      // If either param provided, apply immediately
+      if (preCounty.length || preNetwork.length) applyFilters();
+    }
+
+    // ===== Fetch & init =====
+    fetch(GEOJSON_URL, { cache: 'no-cache' })
+      .then(r => r.json())
+      .then(data => {
+        const features = Array.isArray(data?.features) ? data.features : [];
+        allFeatures = features;
+        if (!features.length) return;
+
+        FIELDS = resolveFieldsFromSample(features[0]?.properties || {});
+
+        // Build filter lists from data
+        const countyTags = uniqueSortedTags(features, FIELDS.county);
+        const networkTags = uniqueSortedTags(features, FIELDS.network);
+        const typeTags = uniqueSortedTags(features, FIELDS.type);
+        const categoryTags = uniqueSortedTags(features, FIELDS.category);
+        const denomTags = uniqueSortedTags(features, FIELDS.denomination);
+
+        buildTagList(el("#list-county"), countyTags, "county");
+        buildTagList(el("#list-network"), networkTags, "network");
+        buildTagList(el("#list-type"), typeTags, "type");
+        buildTagList(el("#list-category"), categoryTags, "category");
+        buildTagList(el("#list-denomination"), denomTags, "denomination");
+
+        drawMarkers(allFeatures);
+
+        // Preselect via URL params (after lists exist)
+        preselectFromParams();
+      })
+      .catch(err => {
+        console.error("Failed to load org GeoJSON:", err);
+        alert("Failed to load organization map data.");
+      });
+
+    // Buttons
+    el("#applyFilters").addEventListener("click", applyFilters);
+    el("#clearFilters").addEventListener("click", clearFilters);
+
+    // ===== Legend mobile interactions (same pattern) =====
+    const legendPanel = document.getElementById('legendPanel');
+    const legendToggle = document.getElementById('legendToggle');
+    const legendClose = document.getElementById('legendClose');
+
+    // prevent map from stealing legend scroll/click
+    L.DomEvent.disableScrollPropagation(legendPanel);
+    L.DomEvent.disableClickPropagation(legendPanel);
+
+    function isMobile() { return window.matchMedia('(max-width: 767.98px)').matches; }
+
+    // background scroll lock when sheet open
+    let scrollLockY = 0;
+    function lockScroll() {
+      scrollLockY = window.scrollY || document.documentElement.scrollTop || 0;
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollLockY}px`;
+      document.body.style.left = '0';
+      document.body.style.right = '0';
+      document.body.style.width = '100%';
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+    }
+    function unlockScroll() {
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.left = '';
+      document.body.style.right = '';
+      document.body.style.width = '';
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+      window.scrollTo(0, scrollLockY);
+    }
+
+    function openLegend() {
+      legendPanel.classList.add('open');
+      if (legendToggle) legendToggle.setAttribute('aria-expanded', 'true');
+      if (isMobile()) lockScroll();
+    }
+    function closeLegend() {
+      legendPanel.classList.remove('open');
+      if (legendToggle) legendToggle.setAttribute('aria-expanded', 'false');
+      if (isMobile()) unlockScroll();
+    }
+
+    if (legendToggle) legendToggle.addEventListener('click', () => {
+      const isOpen = legendPanel.classList.contains('open');
+      isOpen ? closeLegend() : openLegend();
+    });
+    if (legendClose) legendClose.addEventListener('click', closeLegend);
+  </script>
+</body>
+</html>
