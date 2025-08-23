@@ -1,57 +1,82 @@
-// include-nav.js
-(function injectNavbar(){
-  var mount = document.getElementById('navbar-include');
+<!-- include-nav.js -->
+<script>
+(async function () {
+  const mount = document.getElementById('navbar-include');
   if (!mount) return;
 
-  fetch('navbar.html', { cache: 'no-cache' })
-    .then(function(r){ return r.text(); })
-    .then(function(html){
-      mount.innerHTML = html;
+  // Fetch and inject the navbar HTML
+  const res = await fetch('navbar.html', { cache: 'no-cache' });
+  const html = await res.text();
+  mount.innerHTML = html;
 
-      // Run any <script> tags that might be inside navbar.html (safety for future)
-      var scripts = mount.querySelectorAll('script');
-      scripts.forEach(function(oldScript){
-        var s = document.createElement('script');
-        if (oldScript.src) s.src = oldScript.src;
-        if (oldScript.type) s.type = oldScript.type;
-        s.text = oldScript.text || oldScript.textContent;
-        oldScript.replaceWith(s);
-      });
+  // After inject, attach behavior (scripts inside fetched HTML don't run)
+  const nav     = mount.querySelector('.nav');
+  const burger  = nav?.querySelector('.hamburger');
+  const menu    = nav?.querySelector('#navMenu');
 
-      // ---------- Active-link highlight ----------
-      var file = (location.pathname.split('/').pop() || 'index.html').split('?')[0].split('#')[0];
+  if (!nav || !burger || !menu) return;
 
-      // map file → selector in the navbar
-      var map = {
-        'network_map.html': 'a[href="network_map.html"]',
-        'touchpoint.html' : 'a[href="touchpoint.html"]',
-        'organizations.html': 'a[href="organizations.html"]',
-        'leaders.html'     : 'a[href="leaders.html"]',
-        'networks.html'    : 'a[href="networks.html"]',
-        'disaster_data.html': 'a[href="disaster_data.html"]'   // <--- added
-      };
+  function closeMenu(){ menu.classList.remove('open'); burger.setAttribute('aria-expanded','false'); }
+  function openMenu(){ menu.classList.add('open'); burger.setAttribute('aria-expanded','true'); }
 
-      // Highlight exact match
-      var sel = map[file];
-      if (sel) {
-        var link = mount.querySelector(sel);
-        if (link) {
-          link.classList.add('active');
-          link.setAttribute('aria-current', 'page');
-        }
-      }
+  burger.addEventListener('click', () => {
+    const isOpen = menu.classList.contains('open');
+    isOpen ? closeMenu() : openMenu();
+  });
 
-      // If we’re on a View subpage, also highlight the "View ▾" parent
-      var viewFiles = ['organizations.html','leaders.html','networks.html'];
-      if (viewFiles.indexOf(file) !== -1) {
-        var viewRoot = mount.querySelector('.dropdown > a');
-        if (viewRoot) viewRoot.classList.add('active');
-      }
+  // Dropdowns (supports one or many)
+  const dropdowns = Array.from(nav.querySelectorAll('.dropdown'));
+  const toggles   = dropdowns.map(d => d.querySelector('.dropdown-toggle'));
 
-      // If we’re on the root (index.html) there’s no "Home" link — logo serves as home.
-    })
-    .catch(function(err){
-      console.error('Navbar include failed:', err);
-      mount.innerHTML = '<div style="background:#bf3426;color:#fff;padding:8px 12px;">Navigation failed to load</div>';
+  function closeAllDropdowns(){
+    dropdowns.forEach(d => d.classList.remove('open'));
+    toggles.forEach(t => t && t.setAttribute('aria-expanded','false'));
+  }
+
+  toggles.forEach((toggle, i) => {
+    const dd = dropdowns[i];
+    if (!toggle || !dd) return;
+    toggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOpen = dd.classList.contains('open');
+      closeAllDropdowns();
+      if (!isOpen) { dd.classList.add('open'); toggle.setAttribute('aria-expanded','true'); }
     });
+  });
+
+  // Close on outside click / ESC / resize
+  document.addEventListener('click', (e) => { if (!nav.contains(e.target)) { closeAllDropdowns(); closeMenu(); } });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeAllDropdowns(); closeMenu(); } });
+
+  let lastWide = window.innerWidth > 720;
+  window.addEventListener('resize', () => {
+    const wide = window.innerWidth > 720;
+    if (wide !== lastWide) { closeAllDropdowns(); closeMenu(); lastWide = wide; }
+  });
+
+  // ===== Admin POST buttons (Regen) =====
+  const REGEN_TOKEN = '2025';
+  function showToast(msg) {
+    const t = document.createElement('div');
+    t.className = 'toast';
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 2500);
+  }
+  async function postAdmin(url) {
+    try {
+      const resp = await fetch(url, { method: 'POST', headers: { 'Authorization': 'Bearer ' + REGEN_TOKEN, 'Content-Type': 'application/json' } });
+      const txt = await resp.text();
+      if (!resp.ok) return showToast(`Failed: ${resp.status}`);
+      try { const data = JSON.parse(txt); return showToast(data?.ok ? `Success (${data.features ?? 'ok'})` : 'Done'); }
+      catch { return showToast('Done'); }
+    } catch { showToast('Request error'); }
+  }
+  mount.addEventListener('click', (e) => {
+    const btn = e.target.closest('.admin-action');
+    if (!btn) return;
+    e.preventDefault();
+    postAdmin(btn.getAttribute('data-url'));
+  });
 })();
+</script>
