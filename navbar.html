@@ -1,144 +1,123 @@
 <!-- navbar.html -->
-<header class="navbar">
-  <div class="nav">
-    <a href="index.html" aria-label="TBC Home" class="brand">
-      <span class="logo-wrap">
-        <!-- Keep your existing asset path/name -->
-        <img src="TBC_full_logo.gif" alt="TBC logo">
-      </span>
-    </a>
+<div id="tbc-navbar" class="tbc-navbar">
+  <header class="tbc-nav-bar">
+    <div class="tbc-nav">
+      <a href="index.html" aria-label="TBC Home" class="tbc-brand">
+        <span class="tbc-logo-wrap">
+          <img src="TBC_full_logo.gif" alt="TBC logo">
+        </span>
+      </a>
 
-    <!-- Hamburger (mobile) -->
-    <button class="hamburger" type="button" aria-label="Open menu" aria-controls="navMenu" aria-expanded="false">
-      <span></span><span></span><span></span>
-    </button>
+      <!-- Hamburger (mobile) -->
+      <button class="tbc-hamburger" type="button" aria-label="Open menu" aria-controls="tbcNavMenu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
 
-    <ul class="nav-links" id="navMenu">
-      <!-- Touchpoint (restored) -->
-      <li><a href="touchpoint.html">Touchpoint</a></li>
+      <!-- Main links -->
+      <ul class="tbc-nav-links" id="tbcNavMenu">
+        <li><a href="touchpoint.html">Touchpoint</a></li>
 
-      <!-- View dropdown (restored) -->
-      <li class="dropdown">
-        <button class="dropdown-toggle" type="button" aria-haspopup="true" aria-expanded="false">View ▾</button>
-        <ul class="dropdown-content" role="menu" aria-label="View submenu">
-          <li><a href="organizations.html" role="menuitem">Organizations</a></li>
-          <li><a href="leaders.html" role="menuitem">Leaders</a></li>
-          <li><a href="networks.html" role="menuitem">Networks</a></li>
-        </ul>
-      </li>
+        <li class="tbc-dropdown">
+          <button class="tbc-dropdown-toggle" type="button" aria-haspopup="true" aria-expanded="false">View ▾</button>
+          <ul class="tbc-dropdown-content" role="menu" aria-label="View submenu">
+            <li><a href="organizations.html" role="menuitem">Organizations</a></li>
+            <li><a href="leaders.html" role="menuitem">Leaders</a></li>
+            <li><a href="networks.html" role="menuitem">Networks</a></li>
+          </ul>
+        </li>
 
-      <!-- Maps dropdown (Networks, Organizations, Disaster Data) -->
-      <li class="dropdown">
-        <button class="dropdown-toggle" type="button" aria-haspopup="true" aria-expanded="false">Maps ▾</button>
-        <ul class="dropdown-content" role="menu" aria-label="Maps submenu">
-          <li><a href="network_map.html" role="menuitem">Networks</a></li>
-          <li><a href="org_map.html" role="menuitem">Organizations</a></li>
-          <li><a href="disaster_data.html" role="menuitem">Disaster Data</a></li>
-        </ul>
-      </li>
+        <li class="tbc-dropdown">
+          <button class="tbc-dropdown-toggle" type="button" aria-haspopup="true" aria-expanded="false">Maps ▾</button>
+          <ul class="tbc-dropdown-content" role="menu" aria-label="Maps submenu">
+            <li><a href="network_map.html" role="menuitem">Networks</a></li>
+            <li><a href="org_map.html" role="menuitem">Organizations</a></li>
+            <li><a href="disaster_data.html" role="menuitem">Disaster Data</a></li>
+          </ul>
+        </li>
 
-      <!-- Admin dropdown (POST actions) -->
-      <li class="dropdown">
-        <button class="dropdown-toggle" type="button" aria-haspopup="true" aria-expanded="false">Admin ▾</button>
-        <ul class="dropdown-content" role="menu" aria-label="Admin submenu">
-          <li><button class="admin-action" data-url="https://network-map.tbccities.workers.dev/admin/regenerate" role="menuitem">Regen Networks</button></li>
-          <li><button class="admin-action" data-url="https://api.tbc.city/disaster/admin/regenerate" role="menuitem">Regen Disaster</button></li>
-          <li><button class="admin-action" data-url="https://api.tbc.city/orgs/admin/regenerate" role="menuitem">Regen Orgs</button></li>
-        </ul>
-      </li>
-    </ul>
-  </div>
-</header>
+        <li class="tbc-dropdown">
+          <button class="tbc-dropdown-toggle" type="button" aria-haspopup="true" aria-expanded="false">Admin ▾</button>
+          <ul class="tbc-dropdown-content" role="menu" aria-label="Admin submenu">
+            <li><button class="tbc-admin-action" data-url="https://network-map.tbccities.workers.dev/admin/regenerate" role="menuitem">Regen Networks</button></li>
+            <li><button class="tbc-admin-action" data-url="https://api.tbc.city/disaster/admin/regenerate" role="menuitem">Regen Disaster</button></li>
+            <li><button class="tbc-admin-action" data-url="https://api.tbc.city/orgs/admin/regenerate" role="menuitem">Regen Orgs</button></li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+  </header>
 
-<style>
-  :root { --brand: #bf3426; --brand-darker: #a22a1f; }
-
-  /* Full-width bar (now above Leaflet) */
-  .navbar {
-    background: var(--brand);
-    width: 100%;
-    position: sticky;    /* stays at top */
-    top: 0;
-    z-index: 3000;       /* above Leaflet controls/popups */
-  }
-
-  /* Centered row */
-  .nav {
-    display: flex; align-items: center; justify-content: space-between; gap: 16px;
-    padding: 8px 16px; max-width: 1200px; margin: 0 auto;
-    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-  }
-
-  /* Logo badge (unchanged) */
-  .brand { display: inline-flex; align-items: center; text-decoration: none; }
-  .logo-wrap { background:#000; padding:4px; border-radius:6px; display:inline-flex; align-items:center; justify-content:center; }
-  .brand img { height: 36px; width: auto; display: block; }
-
-  /* Links row (desktop) */
-  .nav-links {
-    list-style: none; display: flex; align-items: center; gap: 6px;
-    margin: 0; padding: 0;
-    position: relative;
-    z-index: 3100;     /* ensure clickable above map */
-  }
-  .nav-links > li { position: relative; }
-  .nav-links a,
-  .nav-links .dropdown-toggle,
-  .nav-links button.admin-action {
-    color: #fff; text-decoration: none; font-weight: 700;
-    padding: 8px 12px; border-radius: 4px; display: block; opacity: .95;
-    background: none; border: 0; cursor: pointer; font: inherit;
-  }
-  .nav-links a:hover,
-  .nav-links .dropdown-toggle:hover,
-  .nav-links button.admin-action:hover { background: var(--brand-darker); opacity: 1; }
-  .nav-links a.active { background: var(--brand-darker); opacity: 1; }
-
-  /* Dropdowns */
-  .dropdown .dropdown-content {
-    display: none; position: absolute; top: 100%; right: 0; left: auto;
-    background: var(--brand); min-width: 200px; margin-top: 2px;
-    border-radius: 8px; box-shadow: 0 6px 18px rgba(0,0,0,.15);
-    z-index: 3200;     /* higher than map + other nav */
-    padding: 6px 4px; list-style: none;
-  }
-  .dropdown .dropdown-content li { list-style: none; margin: 0; padding: 0; }
-  .dropdown.open .dropdown-content { display: block; }
-  .dropdown-content a { border-radius: 6px; }
-  .dropdown-content a:hover { background: var(--brand-darker); }
-  .dropdown-content button.admin-action {
-    width: 100%; text-align: left; border-radius: 6px;
-  }
-
-  /* Hamburger */
-  .hamburger {
-    display: none; width: 40px; height: 36px; border: 0; background: transparent; cursor: pointer;
-    position: relative; z-index: 3400; /* always clickable */
-  }
-  .hamburger span {
-    display:block; height:3px; margin:6px 0; background:#fff; border-radius:2px;
-  }
-
-  /* Mobile layout */
-  @media (max-width: 720px) {
-    .hamburger { display: inline-block; }
-    .nav { padding: 8px 10px; }
-    .nav-links {
-      position: absolute; left: 0; right: 0; top: 60px;
-      flex-direction: column; align-items: stretch; gap: 4px;
-      background: var(--brand); padding: 8px; display: none;
-      border-top: 1px solid rgba(255,255,255,.15);
-      z-index: 3300;  /* above map & Leaflet legend */
+  <style>
+    /* ===== Scoped to #tbc-navbar to avoid page conflicts ===== */
+    #tbc-navbar { position: relative; z-index: 3000; } /* sits above Leaflet */
+    #tbc-navbar .tbc-nav-bar {
+      background: #bf3426; width: 100%; position: sticky; top: 0;
     }
-    .nav-links.open { display: flex; }
-    .nav-links a, .nav-links .dropdown-toggle, .nav-links button.admin-action { padding: 10px 12px; }
-
-    /* Dropdown becomes stacked inside sheet */
-    .dropdown .dropdown-content {
-      position: static; display: none; box-shadow: none; margin-top: 0; padding: 4px 0;
-      background: transparent;
+    #tbc-navbar .tbc-nav {
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+      padding: 8px 16px; max-width: 1200px; margin: 0 auto;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
     }
-    .dropdown.open .dropdown-content { display: block; }
-    .dropdown-content a, .dropdown-content button.admin-action { padding-left: 20px; }
-  }
-</style>
+    /* Brand */
+    #tbc-navbar .tbc-brand { display: inline-flex; align-items: center; text-decoration: none; }
+    #tbc-navbar .tbc-logo-wrap { background:#000; padding:4px; border-radius:6px; display:inline-flex; align-items:center; justify-content:center; }
+    #tbc-navbar .tbc-brand img { height: 36px; width: auto; display: block; }
+
+    /* Links (desktop default: visible) */
+    #tbc-navbar .tbc-nav-links {
+      list-style: none; display: flex; align-items: center; gap: 6px;
+      margin: 0; padding: 0;
+      position: relative; z-index: 3100;
+    }
+    #tbc-navbar .tbc-nav-links > li { position: relative; }
+    #tbc-navbar .tbc-nav-links a,
+    #tbc-navbar .tbc-dropdown-toggle,
+    #tbc-navbar .tbc-admin-action {
+      color: #fff; text-decoration: none; font-weight: 700;
+      padding: 8px 12px; border-radius: 4px; display: block; opacity: .95;
+      background: none; border: 0; cursor: pointer; font: inherit;
+    }
+    #tbc-navbar .tbc-nav-links a:hover,
+    #tbc-navbar .tbc-dropdown-toggle:hover,
+    #tbc-navbar .tbc-admin-action:hover { background: #a22a1f; opacity: 1; }
+
+    /* Dropdowns */
+    #tbc-navbar .tbc-dropdown .tbc-dropdown-content {
+      display: none; position: absolute; top: 100%; right: 0;
+      background: #bf3426; min-width: 200px; margin-top: 2px;
+      border-radius: 8px; box-shadow: 0 6px 18px rgba(0,0,0,.15);
+      z-index: 3200; padding: 6px 4px; list-style: none;
+    }
+    #tbc-navbar .tbc-dropdown.open .tbc-dropdown-content { display: block; }
+    #tbc-navbar .tbc-dropdown-content li { list-style: none; margin: 0; padding: 0; }
+    #tbc-navbar .tbc-dropdown-content a { border-radius: 6px; }
+    #tbc-navbar .tbc-dropdown-content a:hover { background: #a22a1f; }
+    #tbc-navbar .tbc-dropdown-content .tbc-admin-action { width: 100%; text-align: left; border-radius: 6px; }
+
+    /* Hamburger (hidden on desktop) */
+    #tbc-navbar .tbc-hamburger {
+      display: none; width: 40px; height: 36px; border: 0; background: transparent; cursor: pointer;
+      position: relative; z-index: 3400; color: #fff;
+    }
+    #tbc-navbar .tbc-hamburger span { display:block; height:3px; margin:6px 0; background:#fff; border-radius:2px; }
+
+    /* Mobile */
+    @media (max-width: 720px) {
+      #tbc-navbar .tbc-hamburger { display: inline-block; }
+      #tbc-navbar .tbc-nav { padding: 8px 10px; }
+      #tbc-navbar .tbc-nav-links {
+        position: absolute; left: 0; right: 0; top: 60px;
+        flex-direction: column; align-items: stretch; gap: 4px;
+        background: #bf3426; padding: 8px; display: none;
+        border-top: 1px solid rgba(255,255,255,.15);
+        z-index: 3300;
+      }
+      #tbc-navbar .tbc-nav-links.open { display: flex; }
+      #tbc-navbar .tbc-dropdown .tbc-dropdown-content {
+        position: static; display: none; box-shadow: none; margin-top: 0; padding: 4px 0; background: transparent;
+      }
+      #tbc-navbar .tbc-dropdown.open .tbc-dropdown-content { display: block; }
+      #tbc-navbar .tbc-dropdown-content a, #tbc-navbar .tbc-dropdown-content .tbc-admin-action { padding-left: 20px; }
+    }
+  </style>
+</div>
