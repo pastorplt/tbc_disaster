@@ -1,12 +1,12 @@
-// include-nav.js  (pure JS; no <script> tags)
+// include-nav.js
 (async function () {
   const mount = document.getElementById('navbar-include');
   if (!mount) return;
 
-  // Fetch & inject navbar.html
+  // Fetch & inject navbar.html (cache-bust to avoid stale iOS cache)
   let html = '';
   try {
-    const res = await fetch('navbar.html?v=1', { cache: 'no-cache' });
+    const res = await fetch('navbar.html?v=2', { cache: 'no-cache' });
     if (!res.ok) throw new Error(`navbar fetch failed: ${res.status}`);
     html = await res.text();
   } catch (e) {
@@ -15,8 +15,7 @@
   }
   mount.innerHTML = html;
 
-  // Scoped query helpers
-  const root      = mount.querySelector('#tbc-navbar') || mount; // handles older navbar too
+  const root      = mount.querySelector('#tbc-navbar') || mount;
   const nav       = root.querySelector('.tbc-nav') || root.querySelector('.nav');
   const burger    = root.querySelector('.tbc-hamburger') || root.querySelector('.hamburger');
   const menu      = root.querySelector('#tbcNavMenu') || root.querySelector('#navMenu');
@@ -26,14 +25,28 @@
     return;
   }
 
-  // Hamburger open/close
+  // ——— iOS-safe toggle helpers ———
+  const openMenu  = () => { menu.classList.add('open');  burger.setAttribute('aria-expanded','true');  };
   const closeMenu = () => { menu.classList.remove('open'); burger.setAttribute('aria-expanded','false'); };
-  const openMenu  = () => { menu.classList.add('open');    burger.setAttribute('aria-expanded','true');  };
+
+  // Ensure the hamburger is actually tappable on iOS
+  burger.style.webkitTapHighlightColor = 'transparent';
+  burger.style.touchAction = 'manipulation'; // hint to avoid 300ms delay
+  burger.style.pointerEvents = 'auto';
+
+  // Click handler (desktop + most mobiles)
   burger.addEventListener('click', () => {
     menu.classList.contains('open') ? closeMenu() : openMenu();
-  });
+  }, { passive: true });
 
-  // Dropdowns (desktop + mobile)
+  // Touch handler (iOS Safari/Chrome)
+  burger.addEventListener('touchend', (e) => {
+    e.preventDefault();   // prevent ghost click
+    e.stopPropagation();  // avoid bubbling to document close handler
+    menu.classList.contains('open') ? closeMenu() : openMenu();
+  }, { passive: false });
+
+  // Dropdowns (desktop + mobile sheet)
   const dropdowns = Array.from(root.querySelectorAll('.tbc-dropdown, .dropdown'));
   const toggles   = dropdowns.map(d => d.querySelector('.tbc-dropdown-toggle, .dropdown-toggle'));
   const closeAllDropdowns = () => {
@@ -43,26 +56,41 @@
   toggles.forEach((toggle, i) => {
     const dd = dropdowns[i];
     if (!toggle || !dd) return;
+
+    // Click
     toggle.addEventListener('click', (e) => {
       e.stopPropagation();
       const isOpen = dd.classList.contains('open');
       closeAllDropdowns();
       if (!isOpen) { dd.classList.add('open'); toggle.setAttribute('aria-expanded','true'); }
-    });
+    }, { passive: true });
+
+    // Touch (iOS)
+    toggle.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const isOpen = dd.classList.contains('open');
+      closeAllDropdowns();
+      if (!isOpen) { dd.classList.add('open'); toggle.setAttribute('aria-expanded','true'); }
+    }, { passive: false });
   });
 
   // Close on outside click / Esc / resize
   document.addEventListener('click', (e) => {
     if (!root.contains(e.target)) { closeAllDropdowns(); closeMenu(); }
-  });
+  }, { passive: true });
+  document.addEventListener('touchend', (e) => {
+    if (!root.contains(e.target)) { closeAllDropdowns(); closeMenu(); }
+  }, { passive: true });
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') { closeAllDropdowns(); closeMenu(); }
   });
+
   let lastWide = window.innerWidth > 720;
   window.addEventListener('resize', () => {
     const wide = window.innerWidth > 720;
     if (wide !== lastWide) { closeAllDropdowns(); closeMenu(); lastWide = wide; }
-  });
+  }, { passive: true });
 
   // Admin POST actions
   const REGEN_TOKEN = '2025';
@@ -94,7 +122,7 @@
     postAdmin(btn.getAttribute('data-url'));
   });
 
-  // Extra safety on map pages: keep Leaflet behind navbar
+  // Keep Leaflet behind navbar (extra safety)
   const style = document.createElement('style');
   style.textContent = `.leaflet-container { z-index: 0 !important; }`;
   document.head.appendChild(style);
