@@ -1,129 +1,251 @@
 <!-- navbar.html -->
-<div id="tbc-navbar">
-  <header class="tbc-bar">
-    <div class="tbc-row">
-      <a href="index.html" class="tbc-brand" aria-label="TBC Home">
-        <span class="tbc-logo"><img src="TBC_full_logo.gif" alt="TBC logo" /></span>
-      </a>
+<header class="navbar">
+<div class="nav">
+<a href="index.html" aria-label="TBC Home" class="brand">
+<span class="logo-wrap">
+<img src="TBC_full_logo.gif" alt="TBC logo">
+</span>
+</a>
 
-      <!-- CSS-only hamburger: input + label -->
-      <input id="tbcNavToggle" class="tbc-toggle" type="checkbox" aria-hidden="true" />
-      <label for="tbcNavToggle" class="tbc-hamburger" aria-controls="tbcNav" aria-label="Toggle menu">
-        <span></span><span></span><span></span>
-      </label>
+<!-- Hamburger (mobile) -->
+<button class="hamburger" type="button" aria-label="Open menu" aria-controls="navMenu" aria-expanded="false">
+<span></span><span></span><span></span>
+</button>
 
-      <!-- Links -->
-      <nav id="tbcNav" class="tbc-nav" aria-label="Primary">
-        <ul class="tbc-links">
-          <li><a href="touchpoint.html">Touchpoint</a></li>
+<ul class="nav-links" id="navMenu">
+<li><a href="network_map.html">Map</a></li>
+<li><a href="disaster_data.html">Disaster Data</a></li>
+<li><a href="touchpoint.html">Touchpoint</a></li>
 
-          <li>
-            <details class="tbc-group">
-              <summary>View</summary>
-              <div class="tbc-panel">
-                <a href="organizations.html">Organizations</a>
-                <a href="leaders.html">Leaders</a>
-                <a href="networks.html">Networks</a>
-              </div>
-            </details>
-          </li>
+<li class="dropdown">
+<button class="dropdown-toggle" type="button" aria-haspopup="true" aria-expanded="false">View ▾</button>
+<ul class="dropdown-content" role="menu" aria-label="View submenu">
+<li><a href="organizations.html" role="menuitem">Organizations</a></li>
+<li><a href="leaders.html" role="menuitem">Leaders</a></li>
+<li><a href="networks.html" role="menuitem">Networks</a></li>
+</ul>
+</li>
 
-          <li>
-            <details class="tbc-group">
-              <summary>Maps</summary>
-              <div class="tbc-panel">
-                <a href="network_map.html">Networks</a>
-                <a href="org_map.html">Organizations</a>
-                <a href="disaster_data.html">Disaster Data</a>
-              </div>
-            </details>
-          </li>
-
-          <li>
-            <details class="tbc-group">
-              <summary>Admin</summary>
-              <div class="tbc-panel">
-                <button class="tbc-admin" data-url="https://network-map.tbccities.workers.dev/admin/regenerate">Regen Networks</button>
-                <button class="tbc-admin" data-url="https://api.tbc.city/disaster/admin/regenerate">Regen Disaster</button>
-                <button class="tbc-admin" data-url="https://api.tbc.city/orgs/admin/regenerate">Regen Orgs</button>
-              </div>
-            </details>
-          </li>
-        </ul>
-      </nav>
-    </div>
-  </header>
-
-  <style>
-    :root { --tbc-brand:#bf3426; --tbc-brand-dk:#a22a1f; }
-
-    /* Layering so it beats Leaflet */
-    #tbc-navbar { position: relative; z-index: 4000; }
-    #tbc-navbar .tbc-bar { background: var(--tbc-brand); position: sticky; top: 0; z-index: 4100; width: 100%; }
-    #tbc-navbar .tbc-row {
-      max-width: 1200px; margin: 0 auto; padding: 8px 16px;
-      display: flex; align-items: center; gap: 16px; justify-content: space-between;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-    }
-
-    /* Brand */
-    #tbc-navbar .tbc-brand { display:inline-flex; align-items:center; text-decoration:none; }
-    #tbc-navbar .tbc-logo { background:#000; padding:4px; border-radius:6px; display:inline-flex; }
-    #tbc-navbar .tbc-logo img { height:36px; width:auto; display:block; }
-
-    /* Hide the checkbox */
-    #tbc-navbar .tbc-toggle { position:absolute; opacity:0; pointer-events:none; }
-
-    /* Hamburger (label for the checkbox) */
-    #tbc-navbar .tbc-hamburger{
-      display:none; width:48px; height:48px; margin-left:auto; cursor:pointer;
-      position:relative; z-index:5000; -webkit-tap-highlight-color:transparent; touch-action:manipulation;
-      align-items:center; justify-content:center;
-    }
-    #tbc-navbar .tbc-hamburger span{
-      display:block; height:3px; width:26px; margin:5px auto; background:#fff; border-radius:2px; pointer-events:none;
-    }
-
-    /* Desktop nav */
-    #tbc-navbar .tbc-nav { position:relative; z-index:4200; }
-    #tbc-navbar .tbc-links{ list-style:none; display:flex; gap:8px; margin:0; padding:0; align-items:center; }
-    #tbc-navbar .tbc-links > li { position:relative; }
-    #tbc-navbar .tbc-links a, #tbc-navbar .tbc-group > summary, #tbc-navbar .tbc-admin{
-      color:#fff; font-weight:700; text-decoration:none; background:none; border:0; cursor:pointer;
-      padding:8px 12px; border-radius:4px; display:block;
-    }
-    #tbc-navbar .tbc-links a:hover, #tbc-navbar .tbc-group > summary:hover, #tbc-navbar .tbc-admin:hover{ background:var(--tbc-brand-dk); }
-
-    /* Dropdowns via <details> */
-    #tbc-navbar .tbc-group{ position:relative; }
-    #tbc-navbar .tbc-group > summary{ list-style:none; }
-    #tbc-navbar .tbc-group > summary::-webkit-details-marker{ display:none; }
-    #tbc-navbar .tbc-panel{
-      position:absolute; top:100%; right:0; min-width:200px; background:var(--tbc-brand);
-      border-radius:8px; box-shadow:0 6px 18px rgba(0,0,0,.15); padding:6px; display:none; z-index:4400;
-    }
-    #tbc-navbar .tbc-group[open] > .tbc-panel{ display:block; }
-    #tbc-navbar .tbc-panel a, #tbc-navbar .tbc-panel .tbc-admin{ border-radius:6px; }
-    #tbc-navbar .tbc-panel a:hover, #tbc-navbar .tbc-panel .tbc-admin:hover{ background:var(--tbc-brand-dk); }
-
-    /* Mobile: show hamburger, stack menu; checkbox controls visibility */
-    @media (max-width: 720px){
-      #tbc-navbar .tbc-hamburger{ display:inline-flex; }
-      #tbc-navbar .tbc-nav{ position:absolute; left:0; right:0; top:60px; display:none; }
-      #tbc-navbar .tbc-links{
-        flex-direction:column; align-items:stretch; gap:6px; background:var(--tbc-brand);
-        padding:8px; border-top:1px solid rgba(255,255,255,.15);
-      }
-      #tbc-navbar .tbc-group .tbc-panel{ position:static; box-shadow:none; padding:4px 0; }
-      #tbc-navbar .tbc-panel a, #tbc-navbar .tbc-panel .tbc-admin{ padding-left:20px; }
-
-      /* OPEN when checkbox is checked */
-      #tbc-navbar #tbcNavToggle:checked ~ .tbc-nav{ display:block; }
-    }
-
-    /* Keep Leaflet beneath nav on map pages */
-    .leaflet-container{ z-index:0 !important; }
-    .leaflet-control-container, .leaflet-top, .leaflet-bottom{ z-index:900 !important; }
-    .map-title{ z-index:1000 !important; }
-  </style>
+<!-- Admin dropdown with direct POST actions -->
+<li class="dropdown">
+<button class="dropdown-toggle" type="button" aria-haspopup="true" aria-expanded="false">Admin ▾</button>
+<ul class="dropdown-content" role="menu" aria-label="Admin submenu">
+<li><a href="#" id="regenNetworks" role="menuitem">Regen Networks</a></li>
+<li><a href="#" id="regenDisaster" role="menuitem">Regen Disaster</a></li>
+</ul>
+</li>
+</ul>
 </div>
+</header>
+
+<style>
+:root { --brand: #bf3426; --brand-darker: #a22a1f; }
+  /* Full-width bar */
+.navbar { background: var(--brand); width: 100%; }
+
+  /* Centered row */
+.nav {
+display: flex; align-items: center; justify-content: space-between; gap: 16px;
+padding: 8px 16px; max-width: 1200px; margin: 0 auto;
+font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+}
+
+  /* Logo badge */
+.brand { display: inline-flex; align-items: center; text-decoration: none; }
+.logo-wrap { background:#000; padding:4px; border-radius:6px; display:inline-flex; align-items:center; justify-content:center; }
+.brand img { height: 36px; width: auto; display: block; }
+
+  /* Links row (desktop) */
+.nav-links {
+list-style: none; display: flex; align-items: center; gap: 6px;
+margin: 0; padding: 0;
+}
+.nav-links > li { position: relative; }
+.nav-links a, .nav-links .dropdown-toggle {
+color: #fff; text-decoration: none; font-weight: 700;
+padding: 8px 12px; border-radius: 4px; display: block; opacity: .95;
+background: none; border: 0; cursor: pointer; font: inherit;
+}
+.nav-links a:hover, .nav-links .dropdown-toggle:hover { background: var(--brand-darker); opacity: 1; }
+.nav-links a.active { background: var(--brand-darker); opacity: 1; }
+
+  /* Dropdown: align to right so it never clips */
+.dropdown .dropdown-content {
+display: none; position: absolute; top: 100%; right: 0; left: auto;
+background: var(--brand); min-width: 200px; margin-top: 2px;
+border-radius: 8px; box-shadow: 0 6px 18px rgba(0,0,0,.15); z-index: 1000;
+    padding: 6px 4px;
+    list-style: none; /* bullet fix */
+    padding: 6px 4px; list-style: none;
+}
+.dropdown .dropdown-content li { list-style: none; margin: 0; padding: 0; }
+.dropdown.open .dropdown-content { display: block; }
+.dropdown-content a { border-radius: 6px; }
+.dropdown-content a:hover { background: var(--brand-darker); }
+
+  /* Toast (result messages) */
+.toast {
+position: fixed; top: 12px; right: 12px; z-index: 2000;
+background: #111; color: #fff; padding: 10px 14px; border-radius: 10px;
+box-shadow: 0 6px 18px rgba(0,0,0,.2); font-size: 13px;
+opacity: 0; transform: translateY(-8px); pointer-events: none; transition: .2s ease;
+}
+.toast.show { opacity: 1; transform: translateY(0); }
+.toast.success { background: #15803d; }
+.toast.error   { background: #b91c1c; }
+
+  /* Hamburger */
+  .hamburger {
+    display: none; width: 40px; height: 36px; border: 0; background: transparent; cursor: pointer;
+  }
+  .hamburger { display: none; width: 40px; height: 36px; border: 0; background: transparent; cursor: pointer; }
+.hamburger span { display:block; height:3px; margin:6px 0; background:#fff; border-radius:2px; }
+
+  /* Mobile layout */
+@media (max-width: 720px) {
+.hamburger { display: inline-block; }
+.nav { padding: 8px 10px; }
+.nav-links {
+position: absolute; left: 0; right: 0; top: 60px;
+flex-direction: column; align-items: stretch; gap: 4px;
+background: var(--brand); padding: 8px; display: none;
+border-top: 1px solid rgba(255,255,255,.15);
+}
+.nav-links.open { display: flex; }
+.nav-links a, .nav-links .dropdown-toggle { padding: 10px 12px; }
+
+    /* Dropdown becomes inline (stacked) in the mobile sheet */
+.dropdown .dropdown-content {
+position: static; display: none; box-shadow: none; margin-top: 0; padding: 4px 0;
+background: transparent;
+}
+.dropdown.open .dropdown-content { display: block; }
+.dropdown-content a { padding-left: 20px; }
+}
+</style>
+
+<script>
+(function(){
+    // === Cloudflare Worker endpoints (Bearer auth) ===
+    // Matches your POST pattern:
+    // POST https://network-map.tbccities.workers.dev/admin/regenerate/...  with  Authorization: Bearer 2025
+    const ENDPOINT_NETWORKS = "https://network-map.tbccities.workers.dev/admin/regenerate/networks";
+    const ENDPOINT_DISASTER = "https://network-map.tbccities.workers.dev/admin/regenerate/disaster";
+    // === Cloudflare Worker endpoint (Bearer auth) ===
+    // POST https://network-map.tbccities.workers.dev/admin/regenerate
+    // Authorization: Bearer 2025
+    const BASE_ENDPOINT = "https://network-map.tbccities.workers.dev/admin/regenerate";
+    const ENDPOINT_NETWORKS = `${BASE_ENDPOINT}?dataset=networks`; // same route; query is optional
+    const ENDPOINT_DISASTER = `${BASE_ENDPOINT}?dataset=disaster`; // same route; query is optional
+const SECRET_KEY = "2025";
+
+const nav = document.querySelector('.nav');
+const burger = nav.querySelector('.hamburger');
+const menu = nav.querySelector('#navMenu');
+const dropdowns = nav.querySelectorAll('.dropdown');
+const adminNetworks = document.getElementById('regenNetworks');
+const adminDisaster = document.getElementById('regenDisaster');
+
+    // Hamburger toggle
+function closeMenu(){ menu.classList.remove('open'); burger.setAttribute('aria-expanded','false'); }
+function openMenu(){ menu.classList.add('open'); burger.setAttribute('aria-expanded','true'); }
+burger.addEventListener('click', function(){
+const isOpen = menu.classList.contains('open'); isOpen ? closeMenu() : openMenu();
+});
+
+    // Dropdown toggles (support multiple dropdowns)
+dropdowns.forEach(function(dd){
+const toggle = dd.querySelector('.dropdown-toggle');
+function closeDropdown(){ dd.classList.remove('open'); toggle.setAttribute('aria-expanded','false'); }
+function openDropdown(){ dd.classList.add('open'); toggle.setAttribute('aria-expanded','true'); }
+toggle.addEventListener('click', function(e){
+e.stopPropagation();
+const isOpen = dd.classList.contains('open'); isOpen ? closeDropdown() : openDropdown();
+});
+      dd._close = closeDropdown; // for external close
+      dd._close = closeDropdown;
+});
+
+    // Click outside to close all
+document.addEventListener('click', function(e){
+if (!nav.contains(e.target)) {
+dropdowns.forEach(dd => dd._close && dd._close());
+closeMenu();
+}
+});
+
+    // ESC to close
+document.addEventListener('keydown', function(e){
+if (e.key === 'Escape') {
+dropdowns.forEach(dd => dd._close && dd._close());
+closeMenu();
+}
+});
+
+    // Reset when resizing
+let lastWide = window.innerWidth > 720;
+window.addEventListener('resize', function(){
+const wide = window.innerWidth > 720;
+if (wide !== lastWide) {
+dropdowns.forEach(dd => dd._close && dd._close());
+        closeMenu();
+        lastWide = wide;
+        closeMenu(); lastWide = wide;
+}
+});
+
+    // ---- Toasts ----
+function toast(msg, type){
+let t = document.querySelector('.toast');
+if (!t) { t = document.createElement('div'); t.className = 'toast'; document.body.appendChild(t); }
+t.textContent = msg;
+t.classList.remove('success','error');
+if (type) t.classList.add(type);
+t.classList.add('show');
+setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+    // ---- Call Cloudflare Worker (Authorization: Bearer 2025) ----
+async function callRegen(endpoint, label, el){
+try {
+el?.setAttribute('aria-busy', 'true');
+        // Optional confirm (remove if not needed)
+if (!confirm(`Run ${label}?`)) return;
+
+const res = await fetch(endpoint, {
+method: 'POST',
+headers: { 'Authorization': `Bearer ${SECRET_KEY}` }
+});
+
+const text = await res.text();
+if (!res.ok) {
+toast(`${label} failed: ${res.status} ${res.statusText}`, 'error');
+console.error('Regen error:', res.status, text);
+} else {
+toast(`${label} started`, 'success');
+console.log(label, text);
+}
+} catch (err) {
+toast(`${label} error: ${err.message}`, 'error');
+console.error(err);
+} finally {
+el?.removeAttribute('aria-busy');
+dropdowns.forEach(dd => dd._close && dd._close());
+}
+}
+
+    // Wire up Admin actions
+adminNetworks?.addEventListener('click', function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      e.preventDefault(); e.stopPropagation();
+callRegen(ENDPOINT_NETWORKS, 'Regen Networks', this);
+});
+adminDisaster?.addEventListener('click', function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      e.preventDefault(); e.stopPropagation();
+callRegen(ENDPOINT_DISASTER, 'Regen Disaster', this);
+});
+})();
+</script>
