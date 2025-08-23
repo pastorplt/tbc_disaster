@@ -1,212 +1,258 @@
 <!-- navbar.html -->
-<header class="navbar">
-  <div class="nav">
-    <a href="index.html" aria-label="TBC Home" class="brand">
-      <span class="logo-wrap">
-        <img src="TBC_full_logo.gif" alt="TBC logo">
-      </span>
+<header>
+  <nav class="nav" aria-label="Primary">
+    <a class="brand" href="index.html" aria-label="TBC Home">
+      <img src="assets/tbc-logo-white.svg" alt="TBC logo" />
+      <span>TBC City</span>
     </a>
 
-    <!-- Hamburger (mobile) -->
-    <button class="hamburger" type="button" aria-label="Open menu" aria-controls="navMenu" aria-expanded="false">
-      <span></span><span></span><span></span>
+    <!-- Desktop links -->
+    <div class="nav-links desktop-nav" role="menubar" aria-label="Primary">
+      <!-- Maps dropdown -->
+      <div class="dropdown" role="none">
+        <button class="dropbtn" aria-haspopup="true" aria-expanded="false">Maps ▾</button>
+        <div class="dropdown-content" role="menu" aria-label="Maps">
+          <a href="network_map.html" role="menuitem">Networks</a>
+          <a href="org_map.html" role="menuitem">Organizations</a>
+          <a href="disaster_data.html" role="menuitem">Disaster Data</a>
+        </div>
+      </div>
+
+      <!-- Admin dropdown -->
+      <div class="dropdown" role="none">
+        <button class="dropbtn" aria-haspopup="true" aria-expanded="false">Admin ▾</button>
+        <div class="dropdown-content" role="menu" aria-label="Admin">
+          <button class="admin-action" data-url="https://network-map.tbccities.workers.dev/admin/regenerate" role="menuitem">Regen Networks</button>
+          <button class="admin-action" data-url="https://api.tbc.city/disaster/admin/regenerate" role="menuitem">Regen Disaster</button>
+          <button class="admin-action" data-url="https://api.tbc.city/orgs/admin/regenerate" role="menuitem">Regen Orgs</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile hamburger -->
+    <button id="hamburger" class="hamburger" aria-label="Open menu" aria-controls="mobileDrawer" aria-expanded="false">
+      ☰
     </button>
-
-    <ul class="nav-links" id="navMenu">
-      <li><a href="network_map.html">Map</a></li>
-      <li><a href="disaster_data.html">Disaster Data</a></li>
-      <li><a href="touchpoint.html">Touchpoint</a></li>
-
-      <li class="dropdown">
-        <button class="dropdown-toggle" type="button" aria-haspopup="true" aria-expanded="false">View ▾</button>
-        <ul class="dropdown-content" role="menu" aria-label="View submenu">
-          <li><a href="organizations.html" role="menuitem">Organizations</a></li>
-          <li><a href="leaders.html" role="menuitem">Leaders</a></li>
-          <li><a href="networks.html" role="menuitem">Networks</a></li>
-        </ul>
-      </li>
-
-      <!-- Admin dropdown with direct POST actions -->
-      <li class="dropdown">
-        <button class="dropdown-toggle" type="button" aria-haspopup="true" aria-expanded="false">Admin ▾</button>
-        <ul class="dropdown-content" role="menu" aria-label="Admin submenu">
-          <li><a href="#" id="regenNetworks" role="menuitem">Regen Networks</a></li>
-          <li><a href="#" id="regenDisaster" role="menuitem">Regen Disaster</a></li>
-        </ul>
-      </li>
-    </ul>
-  </div>
+  </nav>
 </header>
 
+<!-- Mobile drawer -->
+<aside id="mobileDrawer" class="mobile-drawer" aria-hidden="true">
+  <div class="drawer-header">
+    <div class="drawer-title">Menu</div>
+    <button id="drawerClose" class="drawer-close" aria-label="Close menu">✕</button>
+  </div>
+
+  <!-- Use details for collapsible sections on mobile -->
+  <details class="drawer-group">
+    <summary><span>Maps</span><span class="chev">▶</span></summary>
+    <div class="drawer-links">
+      <a href="network_map.html">Networks</a>
+      <a href="org_map.html">Organizations</a>
+      <a href="disaster_data.html">Disaster Data</a>
+    </div>
+  </details>
+
+  <details class="drawer-group">
+    <summary><span>Admin</span><span class="chev">▶</span></summary>
+    <div class="drawer-links">
+      <button class="admin-action" data-url="https://network-map.tbccities.workers.dev/admin/regenerate">Regen Networks</button>
+      <button class="admin-action" data-url="https://api.tbc.city/disaster/admin/regenerate">Regen Disaster</button>
+      <button class="admin-action" data-url="https://api.tbc.city/orgs/admin/regenerate">Regen Orgs</button>
+    </div>
+  </details>
+</aside>
+
+<!-- Backdrop -->
+<div id="drawerBackdrop" class="drawer-backdrop" hidden></div>
+
 <style>
-  :root { --brand: #bf3426; --brand-darker: #a22a1f; }
-  .navbar { background: var(--brand); width: 100%; }
-  .nav {
-    display: flex; align-items: center; justify-content: space-between; gap: 16px;
-    padding: 8px 16px; max-width: 1200px; margin: 0 auto;
-    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  /* Base header styles */
+  header { background-color: #bf3426; color: #fff; }
+  .nav { height: 60px; display: flex; align-items: center; gap: 16px; padding: 0 16px; max-width: 1100px; margin: 0 auto; }
+  .nav .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: #fff; font-weight: 800; letter-spacing: .3px; }
+  .nav .brand img { height: 36px; width: auto; display: block; }
+  .nav, .nav a, .nav .brand, .dropbtn, .dropdown-content a, .dropdown-content button,
+  .hamburger, .drawer-close, .drawer-links a, .drawer-links button, .drawer-title {
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif !important;
   }
-  .brand { display: inline-flex; align-items: center; text-decoration: none; }
-  .logo-wrap { background:#000; padding:4px; border-radius:6px; display:inline-flex; align-items:center; justify-content:center; }
-  .brand img { height: 36px; width: auto; display: block; }
 
-  .nav-links {
-    list-style: none; display: flex; align-items: center; gap: 6px;
-    margin: 0; padding: 0;
-  }
-  .nav-links > li { position: relative; }
-  .nav-links a, .nav-links .dropdown-toggle {
-    color: #fff; text-decoration: none; font-weight: 700;
-    padding: 8px 12px; border-radius: 4px; display: block; opacity: .95;
-    background: none; border: 0; cursor: pointer; font: inherit;
-  }
-  .nav-links a:hover, .nav-links .dropdown-toggle:hover { background: var(--brand-darker); opacity: 1; }
-  .nav-links a.active { background: var(--brand-darker); opacity: 1; }
+  /* Desktop nav */
+  .nav-links { display: flex; align-items: center; gap: 18px; margin-left: auto; }
+  .nav-links a { color: #fff; text-decoration: none; font-weight: 700; padding: 6px 4px; border-radius: 4px; opacity: .9; }
+  .nav-links a:hover { text-decoration: underline; opacity: 1; }
+  .nav-links a.active { text-decoration: underline; opacity: 1; }
 
-  .dropdown .dropdown-content {
-    display: none; position: absolute; top: 100%; right: 0; left: auto;
-    background: var(--brand); min-width: 200px; margin-top: 2px;
-    border-radius: 8px; box-shadow: 0 6px 18px rgba(0,0,0,.15); z-index: 1000;
-    padding: 6px 4px; list-style: none;
+  /* Desktop dropdowns */
+  .dropdown { position: relative; display: inline-block; }
+  .dropbtn {
+    background: transparent; color: #fff; border: none; cursor: pointer;
+    font-weight: 700; padding: 6px 6px; border-radius: 4px; opacity: .95;
   }
-  .dropdown .dropdown-content li { list-style: none; margin: 0; padding: 0; }
-  .dropdown.open .dropdown-content { display: block; }
-  .dropdown-content a { border-radius: 6px; }
-  .dropdown-content a:hover { background: var(--brand-darker); }
+  .dropbtn:hover { text-decoration: underline; opacity: 1; }
+  .dropdown-content {
+    display: none; position: absolute; right: 0; min-width: 220px; z-index: 1002;
+    background: #fff; color: #111; border: 1px solid #e5e7eb; border-radius: 12px;
+    padding: 8px; margin-top: 8px; box-shadow: 0 10px 24px rgba(0,0,0,.18);
+  }
+  .dropdown:hover .dropdown-content { display: block; }
+  .dropdown-content a, .dropdown-content button {
+    display: block; width: 100%; text-align: left; background: #fff; color: #111;
+    border: 0; padding: 10px 10px; border-radius: 8px; cursor: pointer; text-decoration: none;
+  }
+  .dropdown-content a:hover, .dropdown-content button:hover { background: #f3f4f6; }
 
+  /* Mobile hamburger button (hidden on desktop) */
+  .hamburger {
+    margin-left: auto;
+    display: none;
+    background: transparent;
+    color: #fff;
+    border: none;
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 6px 8px;
+    border-radius: 6px;
+  }
+  .hamburger:focus { outline: 2px solid rgba(255,255,255,0.6); outline-offset: 2px; }
+
+  /* Mobile drawer + backdrop */
+  .drawer-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 1002;
+  }
+  .mobile-drawer {
+    position: fixed; top: 0; bottom: 0; right: 0; width: 82vw; max-width: 360px;
+    background: #ffffff; color: #111; z-index: 1003;
+    border-left: 1px solid #e5e7eb; box-shadow: -8px 0 24px rgba(0,0,0,.2);
+    transform: translateX(100%); transition: transform 200ms ease;
+    display: flex; flex-direction: column; padding: 10px 12px 16px;
+  }
+  .mobile-drawer.open { transform: translateX(0); }
+  .drawer-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 2px 12px; }
+  .drawer-title { font-weight: 800; font-size: 18px; }
+  .drawer-close { border: none; background: #f3f4f6; color: #111; border-radius: 8px; padding: 6px 10px; font-size: 14px; cursor: pointer; }
+
+  .drawer-group { border: 1px solid #e5e7eb; border-radius: 10px; padding: 6px 8px; margin-bottom: 10px; background: #f8fafc; }
+  .drawer-group[open] { background: #eef2ff; }
+  .drawer-group summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 4px; font-weight: 700; }
+  .drawer-group summary::-webkit-details-marker { display: none; }
+  .drawer-group .chev { transition: transform .2s ease; }
+  .drawer-group[open] .chev { transform: rotate(90deg); }
+  .drawer-links { display: grid; gap: 6px; padding: 8px 0 2px; }
+  .drawer-links a, .drawer-links button {
+    display: block; width: 100%; text-align: left; background: #fff; color: #111;
+    border: 1px solid #e5e7eb; padding: 10px 10px; border-radius: 8px; cursor: pointer; text-decoration: none;
+  }
+  .drawer-links a:hover, .drawer-links button:hover { background: #f3f4f6; }
+
+  /* Toast (for admin POST feedback) */
   .toast {
-    position: fixed; top: 12px; right: 12px; z-index: 2000;
-    background: #111; color: #fff; padding: 10px 14px; border-radius: 10px;
-    box-shadow: 0 6px 18px rgba(0,0,0,.2); font-size: 13px;
-    opacity: 0; transform: translateY(-8px); pointer-events: none; transition: .2s ease;
+    position: fixed; right: 16px; bottom: 16px; z-index: 1100;
+    background: rgba(17,17,17,.95); color: #fff; padding: 10px 14px; border-radius: 10px;
+    font-size: 13px; box-shadow: 0 10px 24px rgba(0,0,0,.3);
   }
-  .toast.show { opacity: 1; transform: translateY(0); }
-  .toast.success { background: #15803d; }
-  .toast.error   { background: #b91c1c; }
 
-  .hamburger { display: none; width: 40px; height: 36px; border: 0; background: transparent; cursor: pointer; }
-  .hamburger span { display:block; height:3px; margin:6px 0; background:#fff; border-radius:2px; }
-
-  @media (max-width: 720px) {
+  /* Responsive rules */
+  @media (max-width: 899.98px) {
+    .desktop-nav { display: none; }
     .hamburger { display: inline-block; }
-    .nav { padding: 8px 10px; }
-    .nav-links {
-      position: absolute; left: 0; right: 0; top: 60px;
-      flex-direction: column; align-items: stretch; gap: 4px;
-      background: var(--brand); padding: 8px; display: none;
-      border-top: 1px solid rgba(255,255,255,.15);
-    }
-    .nav-links.open { display: flex; }
-    .nav-links a, .nav-links .dropdown-toggle { padding: 10px 12px; }
-
-    .dropdown .dropdown-content {
-      position: static; display: none; box-shadow: none; margin-top: 0; padding: 4px 0;
-      background: transparent;
-    }
-    .dropdown.open .dropdown-content { display: block; }
-    .dropdown-content a { padding-left: 20px; }
   }
 </style>
 
 <script>
-  (function(){
-    // === Cloudflare Worker endpoint (Bearer auth) ===
-    // POST https://network-map.tbccities.workers.dev/admin/regenerate
-    // Authorization: Bearer 2025
-    const BASE_ENDPOINT = "https://network-map.tbccities.workers.dev/admin/regenerate";
-    const ENDPOINT_NETWORKS = `${BASE_ENDPOINT}?dataset=networks`; // same route; query is optional
-    const ENDPOINT_DISASTER = `${BASE_ENDPOINT}?dataset=disaster`; // same route; query is optional
-    const SECRET_KEY = "2025";
+  // Bearer token for admin POSTs
+  const REGEN_TOKEN = "2025";
 
-    const nav = document.querySelector('.nav');
-    const burger = nav.querySelector('.hamburger');
-    const menu = nav.querySelector('#navMenu');
-    const dropdowns = nav.querySelectorAll('.dropdown');
-    const adminNetworks = document.getElementById('regenNetworks');
-    const adminDisaster = document.getElementById('regenDisaster');
+  // Toast helper
+  function showToast(msg) {
+    const t = document.createElement('div');
+    t.className = 'toast';
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => { t.remove(); }, 2500);
+  }
 
-    function closeMenu(){ menu.classList.remove('open'); burger.setAttribute('aria-expanded','false'); }
-    function openMenu(){ menu.classList.add('open'); burger.setAttribute('aria-expanded','true'); }
-    burger.addEventListener('click', function(){
-      const isOpen = menu.classList.contains('open'); isOpen ? closeMenu() : openMenu();
-    });
-
-    dropdowns.forEach(function(dd){
-      const toggle = dd.querySelector('.dropdown-toggle');
-      function closeDropdown(){ dd.classList.remove('open'); toggle.setAttribute('aria-expanded','false'); }
-      function openDropdown(){ dd.classList.add('open'); toggle.setAttribute('aria-expanded','true'); }
-      toggle.addEventListener('click', function(e){
-        e.stopPropagation();
-        const isOpen = dd.classList.contains('open'); isOpen ? closeDropdown() : openDropdown();
+  async function postAdmin(url) {
+    try {
+      const resp = await fetch(url, {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + REGEN_TOKEN, 'Content-Type': 'application/json' }
       });
-      dd._close = closeDropdown;
-    });
-
-    document.addEventListener('click', function(e){
-      if (!nav.contains(e.target)) {
-        dropdowns.forEach(dd => dd._close && dd._close());
-        closeMenu();
+      const txt = await resp.text();
+      if (!resp.ok) {
+        console.error('Admin error', resp.status, txt);
+        showToast(`Failed: ${resp.status}`);
+        return;
       }
-    });
-    document.addEventListener('keydown', function(e){
-      if (e.key === 'Escape') {
-        dropdowns.forEach(dd => dd._close && dd._close());
-        closeMenu();
-      }
-    });
-    let lastWide = window.innerWidth > 720;
-    window.addEventListener('resize', function(){
-      const wide = window.innerWidth > 720;
-      if (wide !== lastWide) {
-        dropdowns.forEach(dd => dd._close && dd._close());
-        closeMenu(); lastWide = wide;
-      }
-    });
-
-    function toast(msg, type){
-      let t = document.querySelector('.toast');
-      if (!t) { t = document.createElement('div'); t.className = 'toast'; document.body.appendChild(t); }
-      t.textContent = msg;
-      t.classList.remove('success','error');
-      if (type) t.classList.add(type);
-      t.classList.add('show');
-      setTimeout(() => t.classList.remove('show'), 2600);
-    }
-
-    async function callRegen(endpoint, label, el){
+      let msg = 'Done';
       try {
-        el?.setAttribute('aria-busy', 'true');
-        if (!confirm(`Run ${label}?`)) return;
-
-        const res = await fetch(endpoint, {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${SECRET_KEY}` }
-        });
-
-        const text = await res.text();
-        if (!res.ok) {
-          toast(`${label} failed: ${res.status} ${res.statusText}`, 'error');
-          console.error('Regen error:', res.status, text);
-        } else {
-          toast(`${label} started`, 'success');
-          console.log(label, text);
-        }
-      } catch (err) {
-        toast(`${label} error: ${err.message}`, 'error');
-        console.error(err);
-      } finally {
-        el?.removeAttribute('aria-busy');
-        dropdowns.forEach(dd => dd._close && dd._close());
-      }
+        const data = JSON.parse(txt);
+        if (data?.ok) msg = `Success (${data.features ?? 'ok'})`;
+      } catch {}
+      showToast(msg);
+    } catch (e) {
+      console.error('Admin exception', e);
+      showToast('Request error');
     }
+  }
 
-    adminNetworks?.addEventListener('click', function(e){
-      e.preventDefault(); e.stopPropagation();
-      callRegen(ENDPOINT_NETWORKS, 'Regen Networks', this);
-    });
-    adminDisaster?.addEventListener('click', function(e){
-      e.preventDefault(); e.stopPropagation();
-      callRegen(ENDPOINT_DISASTER, 'Regen Disaster', this);
-    });
-  })();
+  // Hook up admin buttons (desktop + mobile)
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.admin-action');
+    if (!btn) return;
+    e.preventDefault();
+    const url = btn.getAttribute('data-url');
+    if (!url) return;
+    postAdmin(url);
+  });
+
+  // Mobile drawer controls
+  const drawer = document.getElementById('mobileDrawer');
+  const backdrop = document.getElementById('drawerBackdrop');
+  const hamburger = document.getElementById('hamburger');
+  const drawerClose = document.getElementById('drawerClose');
+
+  function openDrawer() {
+    drawer.classList.add('open');
+    drawer.setAttribute('aria-hidden', 'false');
+    hamburger.setAttribute('aria-expanded', 'true');
+    backdrop.hidden = false;
+    lockScroll();
+  }
+  function closeDrawer() {
+    drawer.classList.remove('open');
+    drawer.setAttribute('aria-hidden', 'true');
+    hamburger.setAttribute('aria-expanded', 'false');
+    backdrop.hidden = true;
+    unlockScroll();
+  }
+
+  hamburger.addEventListener('click', openDrawer);
+  drawerClose.addEventListener('click', closeDrawer);
+  backdrop.addEventListener('click', closeDrawer);
+  window.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDrawer(); });
+
+  // Background scroll lock (same pattern as your filter sheet)
+  let scrollLockY = 0;
+  function lockScroll() {
+    scrollLockY = window.scrollY || document.documentElement.scrollTop || 0;
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollLockY}px`;
+    document.body.style.left = '0';
+    document.body.style.right = '0';
+    document.body.style.width = '100%';
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+  }
+  function unlockScroll() {
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.left = '';
+    document.body.style.right = '';
+    document.body.style.width = '';
+    document.body.style.overflow = '';
+    document.documentElement.style.overflow = '';
+    window.scrollTo(0, scrollLockY);
+  }
 </script>
