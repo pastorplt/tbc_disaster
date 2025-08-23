@@ -85,9 +85,12 @@
   /* Hamburger */
   .hamburger {
     display: none; width: 40px; height: 36px; border: 0; background: transparent; cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
   }
   .hamburger span {
     display:block; height:3px; margin:6px 0; background:#fff; border-radius:2px;
+    pointer-events: none;
   }
 
   /* Mobile layout */
@@ -120,12 +123,28 @@
     const menu = nav.querySelector('#navMenu');
     const dropdowns = nav.querySelectorAll('.dropdown');
 
-    // Hamburger toggle
-    function closeMenu(){ menu.classList.remove('open'); burger.setAttribute('aria-expanded','false'); }
-    function openMenu(){ menu.classList.add('open'); burger.setAttribute('aria-expanded','true'); }
-    burger.addEventListener('click', function(){
-      const isOpen = menu.classList.contains('open'); isOpen ? closeMenu() : openMenu();
-    });
+    // Hamburger toggle - enhanced for iOS Chrome compatibility
+    function closeMenu(){ 
+      menu.classList.remove('open'); 
+      burger.setAttribute('aria-expanded','false');
+      burger.style.backgroundColor = 'transparent';
+    }
+    function openMenu(){ 
+      menu.classList.add('open'); 
+      burger.setAttribute('aria-expanded','true');
+      burger.style.backgroundColor = 'rgba(255,255,255,0.1)';
+    }
+    
+    // Use both click and touchend events for better mobile compatibility
+    function handleMenuToggle(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      const isOpen = menu.classList.contains('open');
+      isOpen ? closeMenu() : openMenu();
+    }
+    
+    burger.addEventListener('click', handleMenuToggle);
+    burger.addEventListener('touchend', handleMenuToggle);
 
     // Handle multiple dropdowns
     dropdowns.forEach(function(dropdown) {
