@@ -1,131 +1,120 @@
 <!-- navbar.html -->
-<div id="tbc-navbar" class="tbc-navbar">
-  <header class="tbc-nav-bar">
-    <div class="tbc-nav">
-      <a href="index.html" aria-label="TBC Home" class="tbc-brand">
-        <span class="tbc-logo-wrap">
-          <img src="TBC_full_logo.gif" alt="TBC logo">
-        </span>
+<div id="tbc-navbar">
+  <header class="tbc-bar">
+    <div class="tbc-row">
+      <a href="index.html" class="tbc-brand" aria-label="TBC Home">
+        <span class="tbc-logo"><img src="TBC_full_logo.gif" alt="TBC logo" /></span>
       </a>
 
-      <!-- Hamburger (mobile) -->
-      <button class="tbc-hamburger" type="button" aria-label="Open menu" aria-controls="tbcNavMenu" aria-expanded="false">
+      <!-- Hamburger (shown on mobile) -->
+      <button class="tbc-hamburger" type="button" aria-controls="tbcNav" aria-expanded="false" aria-label="Open menu">
         <span></span><span></span><span></span>
       </button>
 
-      <!-- Main links -->
-      <ul class="tbc-nav-links" id="tbcNavMenu">
-        <li><a href="touchpoint.html">Touchpoint</a></li>
+      <!-- Links -->
+      <nav id="tbcNav" class="tbc-nav" aria-label="Primary">
+        <ul class="tbc-links">
+          <li><a href="touchpoint.html">Touchpoint</a></li>
 
-        <li class="tbc-dropdown">
-          <button class="tbc-dropdown-toggle" type="button" aria-haspopup="true" aria-expanded="false">View ▾</button>
-          <ul class="tbc-dropdown-content" role="menu" aria-label="View submenu">
-            <li><a href="organizations.html" role="menuitem">Organizations</a></li>
-            <li><a href="leaders.html" role="menuitem">Leaders</a></li>
-            <li><a href="networks.html" role="menuitem">Networks</a></li>
-          </ul>
-        </li>
+          <!-- View (native details) -->
+          <li>
+            <details class="tbc-group">
+              <summary>View</summary>
+              <div class="tbc-panel">
+                <a href="organizations.html">Organizations</a>
+                <a href="leaders.html">Leaders</a>
+                <a href="networks.html">Networks</a>
+              </div>
+            </details>
+          </li>
 
-        <li class="tbc-dropdown">
-          <button class="tbc-dropdown-toggle" type="button" aria-haspopup="true" aria-expanded="false">Maps ▾</button>
-          <ul class="tbc-dropdown-content" role="menu" aria-label="Maps submenu">
-            <li><a href="network_map.html" role="menuitem">Networks</a></li>
-            <li><a href="org_map.html" role="menuitem">Organizations</a></li>
-            <li><a href="disaster_data.html" role="menuitem">Disaster Data</a></li>
-          </ul>
-        </li>
+          <!-- Maps -->
+          <li>
+            <details class="tbc-group">
+              <summary>Maps</summary>
+              <div class="tbc-panel">
+                <a href="network_map.html">Networks</a>
+                <a href="org_map.html">Organizations</a>
+                <a href="disaster_data.html">Disaster Data</a>
+              </div>
+            </details>
+          </li>
 
-        <li class="tbc-dropdown">
-          <button class="tbc-dropdown-toggle" type="button" aria-haspopup="true" aria-expanded="false">Admin ▾</button>
-          <ul class="tbc-dropdown-content" role="menu" aria-label="Admin submenu">
-            <li><button class="tbc-admin-action" data-url="https://network-map.tbccities.workers.dev/admin/regenerate" role="menuitem">Regen Networks</button></li>
-            <li><button class="tbc-admin-action" data-url="https://api.tbc.city/disaster/admin/regenerate" role="menuitem">Regen Disaster</button></li>
-            <li><button class="tbc-admin-action" data-url="https://api.tbc.city/orgs/admin/regenerate" role="menuitem">Regen Orgs</button></li>
-          </ul>
-        </li>
-      </ul>
+          <!-- Admin -->
+          <li>
+            <details class="tbc-group">
+              <summary>Admin</summary>
+              <div class="tbc-panel">
+                <button class="tbc-admin" data-url="https://network-map.tbccities.workers.dev/admin/regenerate">Regen Networks</button>
+                <button class="tbc-admin" data-url="https://api.tbc.city/disaster/admin/regenerate">Regen Disaster</button>
+                <button class="tbc-admin" data-url="https://api.tbc.city/orgs/admin/regenerate">Regen Orgs</button>
+              </div>
+            </details>
+          </li>
+        </ul>
+      </nav>
     </div>
   </header>
 
   <style>
-    :root { --brand: #bf3426; --brand-darker: #a22a1f; }
+    /* ===== Scope everything under #tbc-navbar to avoid conflicts ===== */
+    :root { --tbc-brand: #bf3426; --tbc-brand-dk: #a22a1f; }
 
-    /* Always above Leaflet and page content */
     #tbc-navbar { position: relative; z-index: 4000; }
-    #tbc-navbar .tbc-nav-bar { background: var(--brand); width: 100%; position: sticky; top: 0; z-index: 4100; }
-    #tbc-navbar .tbc-nav {
-      display: flex; align-items: center; justify-content: space-between; gap: 16px;
-      padding: 8px 16px; max-width: 1200px; margin: 0 auto;
+    #tbc-navbar .tbc-bar { background: var(--tbc-brand); position: sticky; top: 0; z-index: 4100; width: 100%; }
+    #tbc-navbar .tbc-row {
+      max-width: 1200px; margin: 0 auto; padding: 8px 16px;
+      display: flex; align-items: center; gap: 16px; justify-content: space-between;
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      position: relative; z-index: 4200;
     }
 
-    /* Brand/logo (original look) */
+    /* Brand */
     #tbc-navbar .tbc-brand { display: inline-flex; align-items: center; text-decoration: none; }
-    #tbc-navbar .tbc-logo-wrap { background:#000; padding:4px; border-radius:6px; display:inline-flex; align-items:center; justify-content:center; }
-    #tbc-navbar .tbc-brand img { height: 36px; width: auto; display: block; }
+    #tbc-navbar .tbc-logo { background:#000; padding:4px; border-radius:6px; display:inline-flex; }
+    #tbc-navbar .tbc-logo img { height: 36px; width: auto; display:block; }
 
-    /* Desktop links row (visible by default) */
-    #tbc-navbar .tbc-nav-links {
-      list-style: none; display: flex; align-items: center; gap: 6px;
-      margin: 0; padding: 0;
-      position: relative; z-index: 4300;
-    }
-    #tbc-navbar .tbc-nav-links > li { position: relative; }
-    #tbc-navbar .tbc-nav-links a,
-    #tbc-navbar .tbc-dropdown-toggle,
-    #tbc-navbar .tbc-admin-action {
-      color: #fff; text-decoration: none; font-weight: 700;
-      padding: 8px 12px; border-radius: 4px; display: block; opacity: .95;
-      background: none; border: 0; cursor: pointer; font: inherit;
-    }
-    #tbc-navbar .tbc-nav-links a:hover,
-    #tbc-navbar .tbc-dropdown-toggle:hover,
-    #tbc-navbar .tbc-admin-action:hover { background: var(--brand-darker); opacity: 1; }
-
-    /* Dropdown menus */
-    #tbc-navbar .tbc-dropdown .tbc-dropdown-content {
-      display: none; position: absolute; top: 100%; right: 0;
-      background: var(--brand); min-width: 200px; margin-top: 2px;
-      border-radius: 8px; box-shadow: 0 6px 18px rgba(0,0,0,.15);
-      z-index: 4400; padding: 6px 4px; list-style: none;
-    }
-    #tbc-navbar .tbc-dropdown.open .tbc-dropdown-content { display: block; }
-    #tbc-navbar .tbc-dropdown-content li { list-style: none; margin: 0; padding: 0; }
-    #tbc-navbar .tbc-dropdown-content a { border-radius: 6px; }
-    #tbc-navbar .tbc-dropdown-content a:hover { background: var(--brand-darker); }
-    #tbc-navbar .tbc-dropdown-content .tbc-admin-action { width: 100%; text-align: left; border-radius: 6px; }
-
-    /* Hamburger — large hit area, always tappable */
+    /* Hamburger */
     #tbc-navbar .tbc-hamburger {
-      display: none; width: 48px; height: 48px; border: 0;
-      background: transparent; cursor: pointer; margin-left: auto;
-      position: relative; z-index: 5000;
-      -webkit-tap-highlight-color: transparent; touch-action: manipulation; pointer-events: auto;
-      align-items: center; justify-content: center;
+      display: none; width: 48px; height: 48px; border: 0; background: transparent; padding: 0;
+      margin-left: auto; cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+      position: relative; z-index: 5000; align-items: center; justify-content: center;
     }
-    #tbc-navbar .tbc-hamburger span { display:block; height:3px; width:24px; margin:4px 0; background:#fff; border-radius:2px; pointer-events: none; }
+    #tbc-navbar .tbc-hamburger span { display:block; height:3px; width:24px; margin:4px 0; background:#fff; border-radius:2px; pointer-events:none; }
 
-    /* Mobile layout (menu becomes slide-down panel) */
+    /* Nav links */
+    #tbc-navbar .tbc-nav { position: relative; z-index: 4200; }
+    #tbc-navbar .tbc-links { list-style:none; display:flex; gap:8px; margin:0; padding:0; align-items:center; }
+    #tbc-navbar .tbc-links > li { position: relative; }
+    #tbc-navbar .tbc-links a, #tbc-navbar .tbc-group > summary, #tbc-navbar .tbc-admin {
+      color:#fff; font-weight:700; text-decoration:none; background:none; border:0; cursor:pointer;
+      padding:8px 12px; border-radius:4px; display:block;
+    }
+    #tbc-navbar .tbc-links a:hover, #tbc-navbar .tbc-group > summary:hover, #tbc-navbar .tbc-admin:hover { background: var(--tbc-brand-dk); }
+
+    /* Dropdowns via details */
+    #tbc-navbar .tbc-group { position: relative; }
+    #tbc-navbar .tbc-group > summary { list-style:none; }
+    #tbc-navbar .tbc-group > summary::-webkit-details-marker { display:none; }
+    #tbc-navbar .tbc-panel {
+      position: absolute; top: 100%; right: 0; min-width: 200px;
+      background: var(--tbc-brand); border-radius: 8px; box-shadow: 0 6px 18px rgba(0,0,0,.15);
+      padding: 6px; display: none; z-index: 4400;
+    }
+    #tbc-navbar .tbc-group[open] > .tbc-panel { display: block; }
+    #tbc-navbar .tbc-panel a, #tbc-navbar .tbc-panel .tbc-admin { border-radius:6px; }
+    #tbc-navbar .tbc-panel a:hover, #tbc-navbar .tbc-panel .tbc-admin:hover { background: var(--tbc-brand-dk); }
+
+    /* Mobile: links stack under bar, dropdown panels inline */
     @media (max-width: 720px) {
       #tbc-navbar .tbc-hamburger { display: inline-flex; }
-      #tbc-navbar .tbc-nav { padding: 8px 10px; }
-      #tbc-navbar .tbc-nav-links {
-        position: absolute; left: 0; right: 0; top: 60px;
-        flex-direction: column; align-items: stretch; gap: 4px;
-        background: var(--brand); padding: 8px; display: none;
-        border-top: 1px solid rgba(255,255,255,.15);
-        z-index: 4500;
-      }
-      #tbc-navbar .tbc-nav-links.open { display: flex; }
-      #tbc-navbar .tbc-dropdown .tbc-dropdown-content {
-        position: static; display: none; box-shadow: none; margin-top: 0; padding: 4px 0; background: transparent;
-      }
-      #tbc-navbar .tbc-dropdown.open .tbc-dropdown-content { display: block; }
-      #tbc-navbar .tbc-dropdown-content a, #tbc-navbar .tbc-dropdown-content .tbc-admin-action { padding-left: 20px; }
+      #tbc-navbar .tbc-nav { position: absolute; left:0; right:0; top:60px; display:none; }
+      #tbc-navbar .tbc-nav.open { display:block; }
+      #tbc-navbar .tbc-links { flex-direction: column; align-items: stretch; gap:6px; background: var(--tbc-brand); padding:8px; border-top: 1px solid rgba(255,255,255,.15); }
+      #tbc-navbar .tbc-group .tbc-panel { position: static; box-shadow:none; padding: 4px 0; }
+      #tbc-navbar .tbc-panel a, #tbc-navbar .tbc-panel .tbc-admin { padding-left: 20px; }
     }
 
-    /* Keep Leaflet beneath nav (extra safety for map pages) */
+    /* Keep Leaflet below nav on map pages */
     .leaflet-container { z-index: 0 !important; }
     .leaflet-control-container, .leaflet-top, .leaflet-bottom { z-index: 900 !important; }
     .map-title { z-index: 1000 !important; }
