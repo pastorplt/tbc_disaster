@@ -154,6 +154,84 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script>
+    /* =========================================================
+       SHORT LABEL OVERRIDES (CONFIG SECTION)
+       ---------------------------------------------------------
+       Use this to substitute shorter labels for long tag values
+       detected in the GeoJSON. Filtering still uses the original
+       (full) tag values under the hood, so your filters remain
+       accurate. Add/edit items as needed; leave blank to show
+       the original text.
+
+       Example:
+       const TAG_LABEL_OVERRIDES = {
+         regular: {
+           "Children & Youth Services": "Youth",
+           "Community Meals / Food Distribution": "Food"
+         },
+         disaster: {
+           "Emergency Shelter / Warming Center": "Shelter",
+         },
+         physical: {
+           "Commercial Kitchen (Use)": "Kitchen",
+         }
+       };
+    ========================================================= */
+    const TAG_LABEL_OVERRIDES = {
+  regular: {
+    "Faith based services, house of worship": "Worship",
+    "family programs": "Family",
+    "spirititual needs": "Spiritual",
+    "Childrens programs": "Children",
+    "Youth programs": "Youth",
+    "School or Day Care": "School/Day",
+    "Foster Care / support for families in crisis": "Foster care",
+    "Food - prepared meals": "Meals (prep)",
+    "Food - groceries distribution": "Groceries",
+    "Our Facility is available to other FBO organizations offering community services": "Facility avail.",
+    "Bilingual or multilingual support": "Bilingual",
+    "Public school support/partnership": "School partner",
+    "Disability services & support": "Disability",
+    "Senior support/services": "Seniors",
+    "Addiction recovery": "Recovery",
+    "Homeless services": "Homeless",
+    "Transportation": "Transport",
+    "Mental health services": "Mental health",
+    "Small groups for life skills develepment": "Life skills"
+  },
+  disaster: {
+    "Child Care": "Child care",
+    "Youth programming for disaster survivors": "Youth programs",
+    "Disability services & support for disaster survivors": "Disability",
+    "Food - prepared meals for disaster survivors": "Meals (prep)",
+    "Food - groceries distribution for disaster survivors": "Groceries",
+    "Senior support/services for disaster survivors": "Seniors",
+    "Transportation for disaster survivors": "Transport",
+    "Mental health services for disaster survivors": "Mental health",
+    "Our Facility is available to other FBO organizations offering disaster recovery services": "Facility avail.",
+    "Bilingual or multilingual support for disaster survivors": "Bilingual"
+  },
+  physical: {
+    "Food or Meals for disaster survivors": "Meals",
+    "Clothing and Supplies for disaster survivors": "Clothing/supplies",
+    "Donations Management: e.g. Distribution of Clothes, Food, Water, etc. from our facility": "Donations mgmt",
+    "Volunteers for disaster response": "Volunteers",
+    "Resource Assistance/Gift Cards to disaster survivors": "Gift cards",
+    "Phone Support": "Phone support",
+    "Cooling location": "Cooling",
+    "Warming location": "Warming",
+    "Sleeping area": "Sleeping",
+    "Public Restrooms": "Restrooms",
+    "Device Charging Stations": "Charging",
+    "Kitchen use": "Kitchen",
+    "Refrigeration": "Fridge",
+    "Shelter": "Shelter",
+    "Showers": "Showers",
+    "Generator(s)": "Generator",
+    "Vehicle: Van or Bus": "Van/Bus"
+  }
+};
+
     // Basemaps
     const esriGray = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', { maxZoom: 20, attribution: 'Tiles &copy; Esri' });
     const cartoPositron = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { maxZoom: 20, subdomains: 'abcd', attribution: '&copy; OpenStreetMap contributors &copy; CARTO' });
@@ -201,16 +279,23 @@
 
     function normalizeTags(v) { if (!v && v !== 0) return []; if (Array.isArray(v)) return v.map(x => String(x).trim()).filter(Boolean); return String(v).split(/[,;|]/).map(s => s.trim()).filter(Boolean); }
     function uniqueSortedTags(features, fieldKey) { const set = new Set(); for (const f of features) normalizeTags(f.properties?.[fieldKey]).forEach(t => set.add(t)); return Array.from(set).sort((a,b)=>a.localeCompare(b)); }
+
+    function labelFor(groupKey, tag) {
+      const overrides = TAG_LABEL_OVERRIDES[groupKey] || {};
+      return overrides[tag] || tag; // default to original if no override
+    }
+
     function buildTagList(container, tags, groupKey) {
       container.innerHTML = "";
       tags.forEach(tag => {
         const id = `${groupKey}-${tag.replace(/\s+/g,"_")}`;
-        const label = document.createElement('label'); label.className = 'tag-pill'; label.setAttribute('for', id);
+        const label = document.createElement('label'); label.className = 'tag-pill'; label.setAttribute('for', id); label.title = tag; // tooltip shows full text
         const input = document.createElement('input'); input.type = 'checkbox'; input.id = id; input.value = tag; input.dataset.group = groupKey;
-        const span = document.createElement('span'); span.textContent = tag;
+        const span = document.createElement('span'); span.textContent = labelFor(groupKey, tag);
         label.appendChild(input); label.appendChild(span); container.appendChild(label);
       });
     }
+
     function getSelected(groupKey) { return Array.from(document.querySelectorAll(`input[type="checkbox"][data-group="${groupKey}"]:checked`)).map(i => i.value); }
 
     function featureMatchesSelections(f, sel) {
