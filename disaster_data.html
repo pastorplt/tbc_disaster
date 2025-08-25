@@ -127,7 +127,29 @@
 
     .leaflet-control-layers .basemap-heading,
     .leaflet-control-layers .overlays-heading { font-weight: 600; margin-bottom: 4px; display: block; }
-  </style>
+  
+/* === Chip color overrides (filters & popup) === */
+.tag-pill,
+.chip {
+  --chip-bg: #f8fafc;
+  --chip-border: #e1e5ee;
+  --chip-text: #111;
+  background: var(--chip-bg);
+  border: 1px solid var(--chip-border);
+  color: var(--chip-text);
+}
+.tag-pill {
+  display: inline-flex; align-items: center; gap: 8px;
+  border-radius: 999px; padding: 6px 10px;
+  font-size: 13px; user-select: none; cursor: pointer;
+}
+.tag-pill input { cursor: pointer; }
+.chip {
+  display: inline-block; padding: 3px 8px; border-radius: 999px;
+  font-size: 12px;
+}
+
+</style>
 </head>
 <body>
   <div id="navbar-include"></div>
@@ -293,29 +315,37 @@
       return overrides[tag] || tag; // default to original if no override
     }
 
-    function buildTagList(container, tags, groupKey) {
+    
+function buildTagList(container, tags, groupKey) {
   container.innerHTML = "";
   tags.forEach(tag => {
     const id = `${groupKey}-${tag.replace(/\s+/g, "_")}`;
     const label = document.createElement('label');
     label.className = 'tag-pill';
     label.setAttribute('for', id);
-    label.title = tag; // hover shows the full original text
+    label.title = tag; // full original
 
     const input = document.createElement('input');
     input.type = 'checkbox';
     input.id = id;
-    input.value = tag;               // keep full value for filtering
+    input.value = tag;               // full value for filtering
     input.dataset.group = groupKey;
 
     const span = document.createElement('span');
-    span.textContent = labelFor(groupKey, tag); // show the short label
+    span.textContent = labelFor(groupKey, tag); // short label
+
+    // Apply color based on category + tag
+    const c = colorForTag(groupKey, tag);
+    label.style.setProperty('--chip-bg', c.bg);
+    label.style.setProperty('--chip-border', c.border);
+    label.style.setProperty('--chip-text', c.text);
 
     label.appendChild(input);
     label.appendChild(span);
     container.appendChild(label);
   });
 }
+
 
 
     function getSelected(groupKey) { return Array.from(document.querySelectorAll(`input[type="checkbox"][data-group="${groupKey}"]:checked`)).map(i => i.value); }
@@ -333,9 +363,23 @@
 
     const PALETTE30 = ['#1f77b4','#ff7f0e','#2ca02c','#d62728','#9467bd','#8c564b','#e377c2','#7f7f7f','#bcbd22','#17becf','#393b79','#637939','#8c6d31','#843c39','#7b4173','#3182bd','#31a354','#756bb1','#636363','#e6550d','#9edae5','#c7c7c7','#bc80bd','#ffed6f','#a6cee3','#b2df8a','#fb9a99','#fdbf6f','#cab2d6','#6a3d9a'];
     function hashIndex(str, m){ let h=0; for(let i=0;i<str.length;i++) h=(h*31 + str.charCodeAt(i))|0; return Math.abs(h)%m; }
-    function colorForFeature(props) { const key = `${props[FIELDS.name]||''}|${props[FIELDS.address]||''}`; return PALETTE30[ hashIndex(key, PALETTE30.length) ]; }
+    
+function hexToRgba(hex, alpha) {
+  const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  if (!m) return `rgba(0,0,0,${alpha})`;
+  const r = parseInt(m[1], 16), g = parseInt(m[2], 16), b = parseInt(m[3], 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+/** Stable color for a tag within a category */
+function colorForTag(groupKey, tag) {
+  const key = `${groupKey}|${tag}`;
+  const base = PALETTE30[ hashIndex(key, PALETTE30.length) ];
+  return { bg: hexToRgba(base, 0.15), border: base, text: "#111" };
+}
+function colorForFeature(props) { const key = `${props[FIELDS.name]||''}|${props[FIELDS.address]||''}`; return PALETTE30[ hashIndex(key, PALETTE30.length) ]; }
 
-    function makePopup(props) {
+    
+function makePopup(props) {
   const name = props[FIELDS.name] || "(No name)";
   const website = props[FIELDS.website];
   const orgType = props[FIELDS.type];
@@ -348,13 +392,28 @@
   const dis = normalizeTags(props[FIELDS.disaster]);
   const phy = normalizeTags(props[FIELDS.physical]);
 
-  const chips = (arr, group) =>
-    arr.map(t => `<span class="chip" title="${t}">${labelFor(group, t)}</span>`).join(" ");
+  const chipHtml = (arr, group) => arr.map(t => {
+    const c = colorForTag(group, t);
+    const short = labelFor(group, t);
+    return `<span class="chip" title="${t}" style="--chip-bg:${c.bg};--chip-border:${c.border};--chip-text:${c.text}">${short}</span>`;
+  }).join(" ");
 
   return `
     <div class="popup">
       <h3>${name}</h3>
       ${website ? `<div class="field-row"><b>Website:</b> <a href="${website}" target="_blank" rel="noopener">${website}</a></div>` : ""}
+      ${orgType ? `<div class="field-row"><b>Type:</b> ${orgType}</div>` : ""}
+      ${address ? `<div class="field-row"><b>Address:</b> ${address}</div>` : ""}
+      ${contact ? `<div class="field-row"><b>Disaster Contact:</b> ${contact}</div>` : ""}
+      ${email ? `<div class="field-row"><b>Email:</b> <a href="mailto:${email}">${email}</a></div>` : ""}
+      ${phone ? `<div class="field-row"><b>Phone:</b> <a href="tel:${phone}">${phone}</a></div>` : ""}
+
+      ${reg.length ? `<div class="field-row"><b>Regular Services:</b><div class="tag-strip">${chipHtml(reg, 'regular')}</div></div>` : ""}
+      ${dis.length ? `<hr/><div class="field-row"><b>Disaster Services:</b><div class="tag-strip">${chipHtml(dis, 'disaster')}</div></div>` : ""}
+      ${phy.length ? `<hr/><div class="field-row"><b>Physical Resources:</b><div class="tag-strip">${chipHtml(phy, 'physical')}</div></div>` : ""}
+    </div>`;
+}
+
       ${orgType ? `<div class="field-row"><b>Type:</b> ${orgType}</div>` : ""}
       ${address ? `<div class="field-row"><b>Address:</b> ${address}</div>` : ""}
       ${contact ? `<div class="field-row"><b>Disaster Contact:</b> ${contact}</div>` : ""}
