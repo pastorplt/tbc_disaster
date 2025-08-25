@@ -395,7 +395,9 @@ function makePopup(props) {
   const chipHtml = (arr, group) => arr.map(t => {
     const c = colorForTag(group, t);
     const short = labelFor(group, t);
-    return `<span class="chip" title="${t}" style="--chip-bg:${c.bg};--chip-border:${c.border};--chip-text:${c.text}">${short}</span>`;
+    return '<span class="chip" title="' + t +
+           '" style="--chip-bg:' + c.bg + ';--chip-border:' + c.border +
+           ';--chip-text:' + c.text + '">' + short + '</span>';
   }).join(" ");
 
   return `
@@ -414,17 +416,6 @@ function makePopup(props) {
     </div>`;
 }
 
-      ${orgType ? `<div class="field-row"><b>Type:</b> ${orgType}</div>` : ""}
-      ${address ? `<div class="field-row"><b>Address:</b> ${address}</div>` : ""}
-      ${contact ? `<div class="field-row"><b>Disaster Contact:</b> ${contact}</div>` : ""}
-      ${email ? `<div class="field-row"><b>Email:</b> <a href="mailto:${email}">${email}</a></div>` : ""}
-      ${phone ? `<div class="field-row"><b>Phone:</b> <a href="tel:${phone}">${phone}</a></div>` : ""}
-
-      ${reg.length ? `<div class="field-row"><b>Regular Services:</b><div class="tag-strip">${chips(reg, 'regular')}</div></div>` : ""}
-      ${dis.length ? `<hr/><div class="field-row"><b>Disaster Services:</b><div class="tag-strip">${chips(dis, 'disaster')}</div></div>` : ""}
-      ${phy.length ? `<hr/><div class="field-row"><b>Physical Resources:</b><div class="tag-strip">${chips(phy, 'physical')}</div></div>` : ""}
-    </div>`;
-}
 
 
     const markersLayer = L.layerGroup().addTo(map);
