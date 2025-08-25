@@ -63,7 +63,13 @@
     .chev { transition: transform .2s ease; }
     details[open] .chev { transform: rotate(90deg); }
 
-    .tag-list { display: grid; grid-template-columns: 1fr; gap: 6px; margin-top: 8px; }
+    .tag-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)); /* two columns */
+  gap: 6px;
+  margin-top: 8px;
+}
+
     .tag-pill { display: inline-flex; align-items: center; gap: 8px; border: 1px solid #e3e6ef; border-radius: 999px; padding: 6px 10px; background: #fff; font-size: 13px; user-select: none; cursor: pointer; }
     .tag-pill input { cursor: pointer; }
 
@@ -91,6 +97,7 @@
 
     /* Mobile */
     @media (max-width: 767.98px) {
+      .tag-list { grid-template-columns: 1fr; }
       .map-title { font-size: 22px; padding: 10px 16px; border-radius: 14px; }
       .legend-panel {
         position: fixed; top: 0; bottom: 0; left: 0; right: auto;
@@ -286,15 +293,29 @@
     }
 
     function buildTagList(container, tags, groupKey) {
-      container.innerHTML = "";
-      tags.forEach(tag => {
-        const id = `${groupKey}-${tag.replace(/\s+/g,"_")}`;
-        const label = document.createElement('label'); label.className = 'tag-pill'; label.setAttribute('for', id); label.title = tag; // tooltip shows full text
-        const input = document.createElement('input'); input.type = 'checkbox'; input.id = id; input.value = tag; input.dataset.group = groupKey;
-        const span = document.createElement('span'); span.textContent = labelFor(groupKey, tag);
-        label.appendChild(input); label.appendChild(span); container.appendChild(label);
-      });
-    }
+  container.innerHTML = "";
+  tags.forEach(tag => {
+    const id = `${groupKey}-${tag.replace(/\s+/g, "_")}`;
+    const label = document.createElement('label');
+    label.className = 'tag-pill';
+    label.setAttribute('for', id);
+    label.title = tag; // hover shows the full original text
+
+    const input = document.createElement('input');
+    input.type = 'checkbox';
+    input.id = id;
+    input.value = tag;               // keep full value for filtering
+    input.dataset.group = groupKey;
+
+    const span = document.createElement('span');
+    span.textContent = labelFor(groupKey, tag); // show the short label
+
+    label.appendChild(input);
+    label.appendChild(span);
+    container.appendChild(label);
+  });
+}
+
 
     function getSelected(groupKey) { return Array.from(document.querySelectorAll(`input[type="checkbox"][data-group="${groupKey}"]:checked`)).map(i => i.value); }
 
@@ -314,31 +335,37 @@
     function colorForFeature(props) { const key = `${props[FIELDS.name]||''}|${props[FIELDS.address]||''}`; return PALETTE30[ hashIndex(key, PALETTE30.length) ]; }
 
     function makePopup(props) {
-      const name = props[FIELDS.name] || "(No name)";
-      const website = props[FIELDS.website];
-      const orgType = props[FIELDS.type];
-      const address = props[FIELDS.address];
-      const contact = props[FIELDS.contact];
-      const email = props[FIELDS.email];
-      const phone = props[FIELDS.phone];
-      const reg = normalizeTags(props[FIELDS.regular]);
-      const dis = normalizeTags(props[FIELDS.disaster]);
-      const phy = normalizeTags(props[FIELDS.physical]);
-      const chips = arr => arr.map(t => `<span class="chip">${t}</span>`).join(" ");
-      return `
-        <div class="popup">
-          <h3>${name}</h3>
-          ${website ? `<div class="field-row"><b>Website:</b> <a href="${website}" target="_blank" rel="noopener">${website}</a></div>` : ""}
-          ${orgType ? `<div class="field-row"><b>Type:</b> ${orgType}</div>` : ""}
-          ${address ? `<div class="field-row"><b>Address:</b> ${address}</div>` : ""}
-          ${contact ? `<div class="field-row"><b>Disaster Contact:</b> ${contact}</div>` : ""}
-          ${email ? `<div class="field-row"><b>Email:</b> <a href="mailto:${email}">${email}</a></div>` : ""}
-          ${phone ? `<div class="field-row"><b>Phone:</b> <a href="tel:${phone}">${phone}</a></div>` : ""}
-          ${reg.length ? `<div class="field-row"><b>Regular Services:</b><div class="tag-strip">${chips(reg)}</div></div>` : ""}
-          ${dis.length ? `<hr/><div class="field-row"><b>Disaster Services:</b><div class="tag-strip">${chips(dis)}</div></div>` : ""}
-          ${phy.length ? `<hr/><div class="field-row"><b>Physical Resources:</b><div class="tag-strip">${chips(phy)}</div></div>` : ""}
-        </div>`;
-    }
+  const name = props[FIELDS.name] || "(No name)";
+  const website = props[FIELDS.website];
+  const orgType = props[FIELDS.type];
+  const address = props[FIELDS.address];
+  const contact = props[FIELDS.contact];
+  const email = props[FIELDS.email];
+  const phone = props[FIELDS.phone];
+
+  const reg = normalizeTags(props[FIELDS.regular]);
+  const dis = normalizeTags(props[FIELDS.disaster]);
+  const phy = normalizeTags(props[FIELDS.physical]);
+
+  const chips = (arr, group) =>
+    arr.map(t => `<span class="chip" title="${t}">${labelFor(group, t)}</span>`).join(" ");
+
+  return `
+    <div class="popup">
+      <h3>${name}</h3>
+      ${website ? `<div class="field-row"><b>Website:</b> <a href="${website}" target="_blank" rel="noopener">${website}</a></div>` : ""}
+      ${orgType ? `<div class="field-row"><b>Type:</b> ${orgType}</div>` : ""}
+      ${address ? `<div class="field-row"><b>Address:</b> ${address}</div>` : ""}
+      ${contact ? `<div class="field-row"><b>Disaster Contact:</b> ${contact}</div>` : ""}
+      ${email ? `<div class="field-row"><b>Email:</b> <a href="mailto:${email}">${email}</a></div>` : ""}
+      ${phone ? `<div class="field-row"><b>Phone:</b> <a href="tel:${phone}">${phone}</a></div>` : ""}
+
+      ${reg.length ? `<div class="field-row"><b>Regular Services:</b><div class="tag-strip">${chips(reg, 'regular')}</div></div>` : ""}
+      ${dis.length ? `<hr/><div class="field-row"><b>Disaster Services:</b><div class="tag-strip">${chips(dis, 'disaster')}</div></div>` : ""}
+      ${phy.length ? `<hr/><div class="field-row"><b>Physical Resources:</b><div class="tag-strip">${chips(phy, 'physical')}</div></div>` : ""}
+    </div>`;
+}
+
 
     const markersLayer = L.layerGroup().addTo(map);
     function clearMarkers(){ markersLayer.clearLayers(); }
