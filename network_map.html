@@ -86,7 +86,7 @@
       border-radius: 10px; box-shadow: 0 4px 14px rgba(0,0,0,.12);
       padding: 10px 12px 12px;
     }
-    .legend-popup .close { display: none; } /* remove close button entirely */
+    .legend-popup .close { display: none; } /* removed close button */
 
     /* Show the toggle button on ALL viewports */
     .legend-toggle {
@@ -119,6 +119,7 @@
         background: rgba(255,255,255,0.98); z-index: 2;
       }
       .legend-grabber { width: 40px; height: 4px; border-radius: 2px; background: #cbd5e1; margin: 4px auto 8px auto; }
+      .legend-title { margin: 0 0 8px; }
 
       .desktop-only { display: none; }
 
@@ -218,14 +219,14 @@
     function multilineName(name){ return cleanedName(name).split(/\s+/).filter(Boolean).join('<br>'); }
     function allPhotos(props = []){ return [props.photo1,props.photo2,props.photo3,props.photo4,props.photo5,props.photo6].filter(u => typeof u === 'string' && u.trim()); }
     function renderGallery(photos){ if (!photos.length) return ''; const items = photos.map((p,i)=>'<a href="'+p+'" target="_blank" rel="noopener"><img src="'+p+'" alt="Photo '+(i+1)+'" loading="lazy" /></a>').join(''); return '<hr/><div class="gallery">'+items+'</div>'; }
-    function churchesLine(name) {
-      return '<div><a href="/org_map?network='+encodeURIComponent(name)+'" target="_blank" rel="noopener">Churches</a></div>';
+    function churchesLine(rawName) {
+      return '<div><a href="/org_map?network='+encodeURIComponent(rawName)+'" target="_blank" rel="noopener">Churches</a></div>';
     }
     function infoCardHtml(props = {}){
-      const name = cleanedName(props.name);
+      const rawName = (props.name && String(props.name).trim()) || 'Unnamed';
       const emailLine = props.contact_email ? '<div><span class="label">Email:</span> <a href="mailto:'+props.contact_email+'">'+props.contact_email+'</a></div>' : '';
       const photos = allPhotos(props);
-      return '<div class="tip"><div class="tip-name">'+name+'</div><div><span class="label">Leaders:</span> '+(props.leaders ?? '—')+'</div>'+emailLine+churchesLine(name)+renderGallery(photos)+'</div>';
+      return '<div class="tip"><div class="tip-name">'+rawName+'</div><div><span class="label">Leaders:</span> '+(props.leaders ?? '—')+'</div>'+emailLine+churchesLine(rawName)+renderGallery(photos)+'</div>';
     }
 
     // Legend state & helpers
@@ -276,7 +277,7 @@
       if (legendPopupEl) legendPopupEl.remove();
       const el = document.createElement('div');
       el.className = 'legend-popup';
-      el.innerHTML = html; // no close button now
+      el.innerHTML = html; // no close button
       legendPanel.appendChild(el);
 
       const panelRect = legendPanel.getBoundingClientRect();
@@ -299,6 +300,7 @@
         networksGeoJson = L.geoJSON(data, {
           style: styleNetworks,
           onEachFeature: (feature, layer) => {
+            // Labels over polygons use cleaned name
             layer.bindTooltip(multilineName(feature.properties?.name), { permanent: true, direction: 'center', className: 'poly-label', opacity: 1 });
             layer.on('mouseover', (e) => {
               highlight(e);
@@ -316,8 +318,8 @@
 
             const props = feature.properties || {};
             const county = (props.County && String(props.County).trim()) || (props.county && String(props.county).trim()) || 'Unspecified';
-            const name = cleanedName(props.name || 'Unnamed');
-            const item = { name, color: colorForFeature(feature), props, layer };
+            const nameClean = cleanedName(props.name || 'Unnamed');
+            const item = { name: nameClean, color: colorForFeature(feature), props, layer };
             if (!groups.has(county)) groups.set(county, []);
             groups.get(county).push(item);
           }
@@ -338,7 +340,7 @@
         return a.localeCompare(b, undefined, { sensitivity: 'base' });
       });
 
-      // Total networks count (flush-right badge already handled by CSS)
+      // Total networks count
       let total = 0;
       groups.forEach(arr => { total += arr.length; });
       if (totalDesktopEl) totalDesktopEl.textContent = total;
