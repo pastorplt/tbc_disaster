@@ -430,7 +430,7 @@
       if (size < min) size = min;
       if (size > max) size = max;
       document.querySelectorAll('.poly-label').forEach(el => { el.style.fontSize = size.toFixed(1) + 'px'; });
-    });
+    
     }
     map.on('zoomend', updateLabelSizes);
     map.whenReady(updateLabelSizes);
