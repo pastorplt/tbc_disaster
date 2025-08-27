@@ -12,7 +12,7 @@
     html, body { height: 100%; margin: 0; }
     #map { height: calc(100% - 60px); }
 
-    /* Header / Nav */
+    /* ===== Header / Nav (unchanged) ===== */
     header { background-color: #bf3426; color: #fff; }
     .nav { height: 60px; display: flex; align-items: center; gap: 16px; padding: 0 16px; max-width: 1100px; margin: 0 auto; }
     .nav .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: #fff; font-weight: 800; letter-spacing: .3px; }
@@ -37,24 +37,19 @@
 
     .leaflet-interactive { cursor: pointer; }
 
-    /* Legend / Filters */
+    /* ===== Legend / Filters (unchanged) ===== */
     .legend-panel {
-      position: absolute;
-      top: 70px; left: 10px;
+      position: absolute; top: 70px; left: 10px;
       width: 300px; max-height: calc(100% - 90px);
-      overflow-y: auto;
-      z-index: 1000;
+      overflow-y: auto; z-index: 1000;
       background: rgba(255,255,255,0.95);
-      border: 1px solid #e5e7eb;
-      border-radius: 12px;
+      border: 1px solid #e5e7eb; border-radius: 12px;
       box-shadow: 0 4px 16px rgba(0,0,0,.12);
       padding: 10px;
       font: 13px/1.35 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
       -webkit-overflow-scrolling: touch; overscroll-behavior: contain; touch-action: pan-y;
     }
-    /* Desktop hide/show support */
     .legend-panel.closed { display: none; }
-
     .legend-header { display: none; }
     .legend-title { font-weight: 700; font-size: 14px; margin: 4px 0 8px; color: #111; }
 
@@ -73,13 +68,15 @@
     .btn { border: 1px solid #d9deea; background: #fff; padding: 8px 12px; border-radius: 10px; font-size: 13px; cursor: pointer; }
     .btn-primary { border-color: #3b82f6; background: #3b82f6; color: #fff; }
 
-    /* Popup content */
+    /* ===== Popup content & chips ===== */
     .popup { font: 13px/1.35 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; min-width: 240px; max-width: 360px; color: #111; }
     .popup h3 { font-size: 15px; margin: 0 0 6px; font-weight: 700; }
     .field-row { margin: 4px 0; }
     .field-row b { font-weight: 600; }
-    .tag-strip { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
-    .chip { display: inline-block; padding: 3px 8px; border-radius: 999px; border: 1px solid #e1e5ee; background: #f8fafc; font-size: 12px; }
+    .tag-strip { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+    .chip { display: inline-block; padding: 4px 10px; border-radius: 999px; border: 1px solid transparent; font-size: 12px; line-height: 1.1; }
+    .chip-colored { color: #fff; }
+
     .popup hr { border:0; border-top:1px solid #e9ecef; margin:8px 0; }
 
     /* Show toggle on ALL viewports */
@@ -91,6 +88,18 @@
       box-shadow: 0 6px 18px rgba(0,0,0,.2);
     }
     .legend-toggle:active { transform: translateY(1px); }
+
+    /* ===== Mobile-only bottom sheet (from networks map) ===== */
+    .sheet{ position: fixed; inset:0; z-index:1002; display:none; }
+    .sheet.open{ display:block; }
+    .sheet-backdrop{ position:absolute; inset:0; background:rgba(0,0,0,.35); }
+    .sheet-panel{ position:absolute; left:0; right:0; bottom:0; background:#fff; border-radius:16px 16px 0 0; box-shadow: 0 -6px 24px rgba(0,0,0,.25); max-height:85vh; overflow:auto; padding:16px; }
+    .sheet-close{ position:absolute; top:8px; right:8px; border:0; background:#f3f4f6; border-radius:999px; width:32px; height:32px; font-size:18px; }
+    .sheet .tip{ font-size:14px; }
+    .sheet .tip-name{ font-size:18px; margin-bottom:4px; }
+    .sheet .actions{ margin-top:10px; display:flex; gap:10px; flex-wrap:wrap; }
+    .sheet .actions a{ color:#0a58ca; text-decoration:underline; font-weight:700; }
+    @media (min-width: 768px){ .sheet{ display:none !important; } } /* only show on mobile */
 
     /* Mobile */
     @media (max-width: 767.98px) {
@@ -123,6 +132,9 @@
 
     .leaflet-control-layers .basemap-heading,
     .leaflet-control-layers .overlays-heading { font-weight: 600; margin-bottom: 4px; display: block; }
+
+    /* Make popup links clickable (no event swallowing) */
+    .leaflet-popup-content a, .leaflet-popup-content button{ pointer-events:auto; }
   </style>
 </head>
 <body>
@@ -157,20 +169,25 @@
     </aside>
   </div>
 
+  <!-- Mobile info sheet (modal) -->
+  <div id="infoSheet" class="sheet" aria-hidden="true">
+    <div class="sheet-backdrop" data-close="1"></div>
+    <div class="sheet-panel" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+      <button class="sheet-close" type="button" data-close="1" aria-label="Close">×</button>
+      <div id="sheetContent"></div>
+    </div>
+  </div>
+
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script>
-    // Basemaps
+    // ===== Basemaps =====
     const esriGray = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', { maxZoom: 20, attribution: 'Tiles &copy; Esri' });
     const cartoPositron = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { maxZoom: 20, subdomains: 'abcd', attribution: '&copy; OpenStreetMap contributors &copy; CARTO' });
     const esriWorldStreet = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', { maxZoom: 20, attribution: 'Tiles &copy; Esri' });
     const esriTopo = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', { maxZoom: 20, attribution: 'Tiles &copy; Esri' });
 
     const map = L.map('map', {
-      center: [37.8, -122.3],
-      zoom: 9,
-      layers: [esriGray],
-      preferCanvas: true,
-      zoomControl: false // move to bottom-right
+      center: [37.8, -122.3], zoom: 9, layers: [esriGray], preferCanvas: true, zoomControl: false
     });
     L.control.zoom({ position: 'bottomright' }).addTo(map);
 
@@ -181,6 +198,7 @@
     if (baseList) { const h = document.createElement('div'); h.className = 'basemap-heading'; h.textContent = 'Basemap'; baseList.prepend(h); }
 
     const GEOJSON_URL = "https://api.tbc.city/orgs/organization_map.geojson";
+
     let allFeatures = [];
     let FIELDS = {};
     const el = (s) => document.querySelector(s);
@@ -235,13 +253,18 @@
     const PALETTE30 = ['#1f77b4','#ff7f0e','#2ca02c','#d62728','#9467bd','#8c564b','#e377c2','#7f7f7f','#bcbd22','#17becf','#393b79','#637939','#8c6d31','#843c39','#7b4173','#3182bd','#31a354','#756bb1','#636363','#e6550d','#9edae5','#c7c7c7','#bc80bd','#ffed6f','#a6cee3','#b2df8a','#fb9a99','#fdbf6f','#cab2d6','#6a3d9a'];
     function hashIndex(str, m){ let h=0; for(let i=0;i<str.length;i++) h=(h*31 + str.charCodeAt(i))|0; return Math.abs(h)%m; }
     function colorForFeature(props) { const key = `${props[FIELDS.name]||''}|${props[FIELDS.address]||''}`; return PALETTE30[ hashIndex(key, PALETTE30.length) ]; }
+    function colorForTag(tag){ return PALETTE30[ hashIndex(String(tag||''), PALETTE30.length) ]; }
+    function contrastText(hex){ // simple YIQ contrast
+      try {
+        const h = hex.replace('#',''); const r=parseInt(h.slice(0,2),16), g=parseInt(h.slice(2,4),16), b=parseInt(h.slice(4,6),16);
+        const yiq = (r*299 + g*587 + b*114)/1000; return yiq >= 150 ? '#111' : '#fff';
+      } catch { return '#fff'; }
+    }
 
-    // === Church icon helpers ===
+    // === Church icon (single path to avoid seam; shorter building to y=18) ===
     function churchSVG(color, size=20){
       const s = Number(size) || 20;
-      // Adjusted: roof extends to y=11, rectangle starts at y=11 with height=8
-      // This removes the thin gap and shortens the rectangle
-      return `\n<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="${s}" height="${s}" aria-hidden="true">\n  <path d="M7 11 L12 4 L17 11 Z" fill="${color}"/>\n  <rect x="7" y="11" width="10" height="8" fill="${color}"/>\n</svg>`;
+      return `\n<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="${s}" height="${s}" aria-hidden="true">\n  <path d="M7 10 L12 4 L17 10 L17 18 L7 18 Z" fill="${color}"/>\n</svg>`;
     }
     function makeChurchIcon(color){
       const html = churchSVG(color, 20);
@@ -249,36 +272,52 @@
         html,
         className: 'church-marker',
         iconSize: [20, 20],
-        iconAnchor: [10, 20],
-        popupAnchor: [0, -20]
+        iconAnchor: [10, 18], // bottom-center aligns to new bottom at y=18
+        popupAnchor: [0, -18]
       });
     }
 
-    function makePopup(props) {
+    function chipsRow(props){
+      const typeVals = normalizeTags(props[FIELDS.type]);
+      const countyVals = normalizeTags(props[FIELDS.county]).map(t => /county\b/i.test(t) ? t : `${t} County`);
+      const networkVals = normalizeTags(props[FIELDS.network]);
+      const makeChip = (text) => {
+        const bg = colorForTag(text); const fg = contrastText(bg);
+        return `<span class="chip chip-colored" style="background:${bg};color:${fg};">${text}</span>`;
+      };
+      const chips = [...typeVals.map(makeChip), ...countyVals.map(makeChip), ...networkVals.map(makeChip)];
+      if (!chips.length) return '';
+      return `<div class="tag-strip">${chips.join('')}</div>`;
+    }
+
+    function infoHtml(props) {
       const name = props[FIELDS.name] || "(No name)";
       const website = props[FIELDS.website];
-      const orgType = props[FIELDS.type];
       const address = props[FIELDS.address];
-      const county = props[FIELDS.county];
-      const network = props[FIELDS.network];
-      const categories = normalizeTags(props[FIELDS.category]);
-      const denoms = normalizeTags(props[FIELDS.denomination]);
-      const chips = arr => arr.map(t => `<span class="chip">${t}</span>`).join(" ");
       return `<div class="popup">
         <h3>${name}</h3>
-        ${orgType ? `<div class="field-row"><b>Organization Type:</b> ${orgType}</div>` : ""}
+        ${chipsRow(props)}
         ${address ? `<div class="field-row"><b>Address:</b> ${address}</div>` : ""}
         ${website ? `<div class="field-row"><b>Website:</b> <a href="${website}" target="_blank" rel="noopener">${website}</a></div>` : ""}
-        ${county ? `<div class="field-row"><b>County:</b> ${county}</div>` : ""}
-        ${network ? `<div class="field-row"><b>Network:</b> ${network}</div>` : ""}
-        ${(categories.length || denoms.length) ? `<hr/>` : ""}
-        ${categories.length ? `<div class="tag-strip">${chips(categories)}</div>` : ""}
-        ${denoms.length ? `<div class="tag-strip" style="${categories.length ? 'margin-top:6px;' : ''}">${chips(denoms)}</div>` : ""}
       </div>`;
     }
 
     const markersLayer = L.layerGroup().addTo(map);
     function clearMarkers(){ markersLayer.clearLayers(); }
+
+    // ===== Bottom sheet helpers (from networks map) =====
+    const sheetEl = document.getElementById('infoSheet');
+    const sheetContentEl = document.getElementById('sheetContent');
+    let scrollLockY = 0;
+    function lockScroll() { scrollLockY = window.scrollY || document.documentElement.scrollTop || 0; document.body.style.position='fixed'; document.body.style.top=`-${scrollLockY}px`; document.body.style.left='0'; document.body.style.right='0'; document.body.style.width='100%'; document.body.style.overflow='hidden'; document.documentElement.style.overflow='hidden'; }
+    function unlockScroll() { document.body.style.position=''; document.body.style.top=''; document.body.style.left=''; document.body.style.right=''; document.body.style.width=''; document.body.style.overflow=''; document.documentElement.style.overflow=''; window.scrollTo(0, scrollLockY); }
+    function isMobile() { return window.matchMedia('(max-width: 767.98px)').matches; }
+    function openSheet(html){ if (!sheetEl) return; sheetContentEl.innerHTML = html; sheetEl.classList.add('open'); sheetEl.setAttribute('aria-hidden','false'); lockScroll(); }
+    function closeSheet(){ if (!sheetEl) return; sheetEl.classList.remove('open'); sheetEl.setAttribute('aria-hidden','true'); unlockScroll(); }
+    if (sheetEl) {
+      sheetEl.addEventListener('click', (e) => { const t = e.target; if (t.matches('[data-close]')) { e.stopPropagation(); closeSheet(); } }, { passive:false });
+    }
+
     function drawMarkers(features) {
       clearMarkers();
       const pts = [];
@@ -289,7 +328,16 @@
         const color = colorForFeature(props);
         const icon = makeChurchIcon(color);
         const m = L.marker([lat, lng], { icon });
-        m.bindPopup(makePopup(props));
+
+        m.on('click', (e) => {
+          const html = infoHtml(props);
+          if (isMobile()) {
+            openSheet(html);
+          } else {
+            m.bindPopup(html, { maxWidth: 420, closeOnClick: true, autoClose: true }).openPopup();
+          }
+        });
+
         markersLayer.addLayer(m);
         pts.push([lat, lng]);
       });
@@ -355,12 +403,6 @@
     L.DomEvent.disableScrollPropagation(legendPanel);
     L.DomEvent.disableClickPropagation(legendPanel);
 
-    function isMobile() { return window.matchMedia('(max-width: 767.98px)').matches; }
-
-    let scrollLockY = 0;
-    function lockScroll() { scrollLockY = window.scrollY || document.documentElement.scrollTop || 0; document.body.style.position='fixed'; document.body.style.top=`-${scrollLockY}px`; document.body.style.left='0'; document.body.style.right='0'; document.body.style.width='100%'; document.body.style.overflow='hidden'; document.documentElement.style.overflow='hidden'; }
-    function unlockScroll() { document.body.style.position=''; document.body.style.top=''; document.body.style.left=''; document.body.style.right=''; document.body.style.width=''; document.body.style.overflow=''; document.documentElement.style.overflow=''; window.scrollTo(0, scrollLockY); }
-
     function openLegend() {
       if (isMobile()) { legendPanel.classList.add('open'); lockScroll(); }
       legendPanel.classList.remove('closed');
@@ -378,6 +420,12 @@
       (isMobile() ? !isOpenMobile : isHiddenDesktop) ? openLegend() : closeLegend();
     });
     if (legendClose) legendClose.addEventListener('click', closeLegend);
+
+    // Keep popup interactions from bubbling; desktop uses Leaflet popup only
+    map.on('popupopen', (e) => {
+      const el = e.popup && e.popup.getElement && e.popup.getElement();
+      if (!el) return; try { L.DomEvent.disableClickPropagation(el); L.DomEvent.disableScrollPropagation(el); } catch {}
+    });
   </script>
 </body>
 </html>
