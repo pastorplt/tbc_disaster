@@ -76,6 +76,7 @@
     .tag-strip { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
     .chip { display: inline-block; padding: 4px 10px; border-radius: 999px; border: 1px solid transparent; font-size: 12px; line-height: 1.1; }
     .chip-colored { color: #fff; }
+.tag-pill.colored { border-color: transparent; }
 
     .popup hr { border:0; border-top:1px solid #e9ecef; margin:8px 0; }
 
@@ -227,11 +228,24 @@
       container.innerHTML = "";
       tags.forEach(tag => {
         const id = `${groupKey}-${tag.replace(/\s+/g,"_")}`;
-        const label = document.createElement('label'); label.className = 'tag-pill'; label.setAttribute('for', id);
-        const input = document.createElement('input'); input.type = 'checkbox'; input.id = id; input.value = tag; input.dataset.group = groupKey;
+        const label = document.createElement('label');
+        label.className = 'tag-pill colored';
+        label.setAttribute('for', id);
+        const bg = colorForTag(tag);
+        const fg = contrastText(bg);
+        label.style.background = bg;
+        label.style.color = fg;
+        label.style.borderColor = 'transparent';
+
+        const input = document.createElement('input');
+        input.type = 'checkbox';
+        input.id = id; input.value = tag; input.dataset.group = groupKey;
+
         const span = document.createElement('span'); span.textContent = tag;
+
         label.appendChild(input); label.appendChild(span); container.appendChild(label);
       });
+    });
     }
     function getSelected(groupKey) { return Array.from(document.querySelectorAll(`input[type="checkbox"][data-group="${groupKey}"]:checked`)).map(i => i.value); }
 
@@ -281,10 +295,22 @@
       const typeVals = normalizeTags(props[FIELDS.type]);
       const countyVals = normalizeTags(props[FIELDS.county]).map(t => /county\b/i.test(t) ? t : `${t} County`);
       const networkVals = normalizeTags(props[FIELDS.network]);
+      const categoryVals = normalizeTags(props[FIELDS.category]);
+      const denomVals = normalizeTags(props[FIELDS.denomination]);
       const makeChip = (text) => {
         const bg = colorForTag(text); const fg = contrastText(bg);
-        return `<span class="chip chip-colored" style="background:${bg};color:${fg};">${text}</span>`;
+        return `<span class=\"chip chip-colored\" style=\"background:${bg};color:${fg};\">${text}</span>`;
       };
+      const chips = [
+        ...typeVals.map(makeChip),
+        ...countyVals.map(makeChip),
+        ...networkVals.map(makeChip),
+        ...categoryVals.map(makeChip),
+        ...denomVals.map(makeChip),
+      ];
+      if (!chips.length) return '';
+      return `<div class=\"tag-strip\">${chips.join('')}</div>`;
+    };
       const chips = [...typeVals.map(makeChip), ...countyVals.map(makeChip), ...networkVals.map(makeChip)];
       if (!chips.length) return '';
       return `<div class="tag-strip">${chips.join('')}</div>`;
@@ -294,11 +320,11 @@
       const name = props[FIELDS.name] || "(No name)";
       const website = props[FIELDS.website];
       const address = props[FIELDS.address];
-      return `<div class="popup">
+      return `<div class=\"popup\">
         <h3>${name}</h3>
+        ${address ? `<div class=\\"field-row\\"><b>Address:</b> ${address}</div>` : ""}
+        ${website ? `<div class=\\"field-row\\"><b>Website:</b> <a href=\\"${website}\\" target=\\"_blank\\" rel=\\"noopener\\">${website}</a></div>` : ""}
         ${chipsRow(props)}
-        ${address ? `<div class="field-row"><b>Address:</b> ${address}</div>` : ""}
-        ${website ? `<div class="field-row"><b>Website:</b> <a href="${website}" target="_blank" rel="noopener">${website}</a></div>` : ""}
       </div>`;
     }
 
