@@ -270,7 +270,7 @@
       const rawName = (props.name && String(props.name).trim()) || 'Unnamed';
       const emailLine = props.contact_email ? '<div><span class="label">Email:</span> <a href="mailto:'+props.contact_email+'">'+props.contact_email+'</a></div>' : '';
       const photos = allPhotos(props);
-      return '<div class="tip">'>
+      return '<div class="tip">'
         + '<div class="tip-name" id="sheetTitle">'+rawName+'</div>'
         + '<div><span class="label">Leaders:</span> '+(props.leaders ?? '—')+'</div>'
         + emailLine
