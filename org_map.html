@@ -236,6 +236,22 @@
     function hashIndex(str, m){ let h=0; for(let i=0;i<str.length;i++) h=(h*31 + str.charCodeAt(i))|0; return Math.abs(h)%m; }
     function colorForFeature(props) { const key = `${props[FIELDS.name]||''}|${props[FIELDS.address]||''}`; return PALETTE30[ hashIndex(key, PALETTE30.length) ]; }
 
+    // === Church icon helpers ===
+    function churchSVG(color, size=20){
+      const s = Number(size) || 20;
+      return `\n<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="${s}" height="${s}" aria-hidden="true">\n  <path d="M7 10 L12 4 L17 10 Z" fill="${color}"/>\n  <rect x="7" y="10" width="10" height="10" fill="${color}"/>\n</svg>`;
+    }
+    function makeChurchIcon(color){
+      const html = churchSVG(color, 20);
+      return L.divIcon({
+        html,
+        className: 'church-marker',
+        iconSize: [20, 20],
+        iconAnchor: [10, 20], // bottom-center
+        popupAnchor: [0, -20]
+      });
+    }
+
     function makePopup(props) {
       const name = props[FIELDS.name] || "(No name)";
       const website = props[FIELDS.website];
@@ -269,7 +285,8 @@
         if (typeof lat !== "number" || typeof lng !== "number") return;
         const props = f.properties || {};
         const color = colorForFeature(props);
-        const m = L.circleMarker([lat, lng], { radius: 6, weight: 2, color, fillColor: color, opacity: 1, fillOpacity: 0.85 });
+        const icon = makeChurchIcon(color);
+        const m = L.marker([lat, lng], { icon });
         m.bindPopup(makePopup(props));
         markersLayer.addLayer(m);
         pts.push([lat, lng]);
