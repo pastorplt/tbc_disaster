@@ -4,6 +4,10 @@
   <meta charset="utf-8" />
   <title>TBC Networks Map</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Favicon -->
+  <link rel="icon" href="/assets/favicon.ico" type="image/x-icon" />
+  <link rel="shortcut icon" href="/assets/favicon.ico" type="image/x-icon" />
+
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
   <style>
     html, body { height: 100%; margin: 0; }
@@ -366,7 +370,30 @@
           const label = document.createElement('span'); label.className = 'legend-name'; label.innerHTML = item.name;
           li.appendChild(swatch); li.appendChild(label); ul.appendChild(li);
 
-          li.addEventListener('click', (e) => { e.stopPropagation(); const html = infoCardHtml(item.props); showLegendPopup(li, html); });
+          // Click -> pan/zoom/highlight + open popup on the polygon
+          li.addEventListener('click', (e) => {
+            e.stopPropagation();
+            try {
+              if (legendPopupEl) { legendPopupEl.remove(); legendPopupEl = null; legendPopupAnchorEl = null; }
+              const b = item.layer.getBounds();
+              if (b && b.isValid && b.isValid()) {
+                map.fitBounds(b.pad(0.15), { animate: true });
+                // brief highlight
+                item.layer.setStyle({ weight: 3, color: '#000', fillOpacity: 0.7 });
+                setTimeout(() => { networksGeoJson && networksGeoJson.resetStyle(item.layer); }, 1200);
+                // open popup at center with raw name & details
+                const center = b.getCenter();
+                item.layer.bindPopup(infoCardHtml(item.props), { maxWidth: 480 });
+                item.layer.openPopup(center);
+                if (item.layer.bringToFront) item.layer.bringToFront();
+              }
+            } catch (err) {
+              console.error('Legend click pan/zoom failed:', err);
+              // fallback: show legend-side popup
+              const html = infoCardHtml(item.props);
+              showLegendPopup(li, html);
+            }
+          });
         });
 
         details.appendChild(summary);
