@@ -270,7 +270,7 @@
       const rawName = (props.name && String(props.name).trim()) || 'Unnamed';
       const emailLine = props.contact_email ? '<div><span class="label">Email:</span> <a href="mailto:'+props.contact_email+'">'+props.contact_email+'</a></div>' : '';
       const photos = allPhotos(props);
-      return '<div class="tip"'>
+      return '<div class="tip">'>
         + '<div class="tip-name" id="sheetTitle">'+rawName+'</div>'
         + '<div><span class="label">Leaders:</span> '+(props.leaders ?? '—')+'</div>'
         + emailLine
@@ -299,6 +299,8 @@
     }
 
     function isMobile() { return window.matchMedia('(max-width: 767.98px)').matches; }
+
+    function isTouch() { return window.matchMedia('(pointer: coarse)').matches; }
 
     L.DomEvent.disableScrollPropagation(legendPanel);
     L.DomEvent.disableClickPropagation(legendPanel);
@@ -362,15 +364,15 @@
           onEachFeature: (feature, layer) => {
             // Labels over polygons use cleaned name
             layer.bindTooltip(multilineName(feature.properties?.name), { permanent: true, direction: 'center', className: 'poly-label', opacity: 1 });
-            layer.on('mouseover', (e) => {
+            layer.on('mouseover', (e) => { if (isTouch()) return; 
               highlight(e);
               const tip = L.tooltip({ className: 'hover-tip', direction: 'top', opacity: 0.95, offset: [0,-8] })
                 .setContent(infoCardHtml(feature.properties))
                 .setLatLng(e.latlng);
               layer._hoverTip = tip; tip.addTo(map);
             });
-            layer.on('mousemove', (e) => { if (layer._hoverTip) layer._hoverTip.setLatLng(e.latlng); });
-            layer.on('mouseout', (e) => {
+            layer.on('mousemove', (e) => { if (isTouch()) return;  if (layer._hoverTip) layer._hoverTip.setLatLng(e.latlng); });
+            layer.on('mouseout', (e) => { if (isTouch()) return; 
               resetHighlight(e);
               if (layer._hoverTip) { map.removeLayer(layer._hoverTip); layer._hoverTip = null; }
             });
