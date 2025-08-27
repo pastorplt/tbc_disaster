@@ -413,7 +413,6 @@
         if (b.isValid()) {
           const current = map.getBounds();
           const union = current.isValid() ? current.extend(b) : b;
-          map.fitBounds(union.pad(0.05));
         }
       });
 
