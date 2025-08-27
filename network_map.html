@@ -434,6 +434,22 @@
     map.on('zoomend', updateLabelSizes);
     map.whenReady(updateLabelSizes);
     window.addEventListener('resize', updateLabelSizes);
+
+    // Prevent popup taps from bubbling to the map on mobile (so links work)
+    map.on('popupopen', (e) => {
+      const el = e.popup && e.popup.getElement && e.popup.getElement();
+      if (!el) return;
+      try {
+        L.DomEvent.disableClickPropagation(el);
+        L.DomEvent.disableScrollPropagation(el);
+      } catch {}
+      const stop = (ev) => { ev.stopPropagation(); };
+      el.querySelectorAll('a, button, input, select, textarea').forEach((node) => {
+        ['click','mousedown','mouseup','touchstart','touchend','pointerdown','pointerup'].forEach((evt) => {
+          node.addEventListener(evt, stop);
+        });
+      });
+    });
   </script>
 </body>
 </html>
