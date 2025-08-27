@@ -298,7 +298,6 @@
         const t = e.target;
         if (t.matches('[data-close]')) { e.stopPropagation(); closeSheet(); }
       }, { passive:false });
-    });
     }
 
     function isMobile() { return window.matchMedia('(max-width: 767.98px)').matches; }
