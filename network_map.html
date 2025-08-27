@@ -435,19 +435,40 @@
     map.whenReady(updateLabelSizes);
     window.addEventListener('resize', updateLabelSizes);
 
-    // Prevent popup taps from bubbling to the map on mobile (so links work)
+    // Ensure popup links/buttons work on mobile and don't close the popup
     map.on('popupopen', (e) => {
       const el = e.popup && e.popup.getElement && e.popup.getElement();
       if (!el) return;
+
       try {
         L.DomEvent.disableClickPropagation(el);
         L.DomEvent.disableScrollPropagation(el);
       } catch {}
-      const stop = (ev) => { ev.stopPropagation(); };
-      el.querySelectorAll('a, button, input, select, textarea').forEach((node) => {
-        ['click','mousedown','mouseup','touchstart','touchend','pointerdown','pointerup'].forEach((evt) => {
-          node.addEventListener(evt, stop);
+
+      // Keep common interactive controls from bubbling to the map
+      ['button','input','select','textarea','label'].forEach((sel) => {
+        el.querySelectorAll(sel).forEach((node) => {
+          ['click','mousedown','mouseup','touchstart','touchend','pointerdown','pointerup'].forEach((evt) => {
+            node.addEventListener(evt, (ev) => ev.stopPropagation(), { passive: false });
+          });
         });
+      });
+
+      // Force anchor taps to navigate reliably on mobile (and not close the popup)
+      el.querySelectorAll('a[href]').forEach((a) => {
+        const go = (ev) => {
+          ev.stopPropagation();
+          ev.preventDefault();
+          const href = a.getAttribute('href');
+          const target = a.getAttribute('target') || '_self';
+          // Defer a tick to avoid interference with Leaflet's tap handler
+          setTimeout(() => { window.open(href, target); }, 0);
+        };
+        a.addEventListener('click', go, { passive: false });
+        a.addEventListener('touchend', go, { passive: false });
+        a.addEventListener('pointerup', go, { passive: false });
+      });
+    });
       });
     });
   </script>
