@@ -239,7 +239,9 @@
     // === Church icon helpers ===
     function churchSVG(color, size=20){
       const s = Number(size) || 20;
-      return `\n<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="${s}" height="${s}" aria-hidden="true">\n  <path d="M7 10 L12 4 L17 10 Z" fill="${color}"/>\n  <rect x="7" y="10" width="10" height="10" fill="${color}"/>\n</svg>`;
+      // Adjusted: roof extends to y=11, rectangle starts at y=11 with height=8
+      // This removes the thin gap and shortens the rectangle
+      return `\n<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="${s}" height="${s}" aria-hidden="true">\n  <path d="M7 11 L12 4 L17 11 Z" fill="${color}"/>\n  <rect x="7" y="11" width="10" height="8" fill="${color}"/>\n</svg>`;
     }
     function makeChurchIcon(color){
       const html = churchSVG(color, 20);
@@ -247,10 +249,9 @@
         html,
         className: 'church-marker',
         iconSize: [20, 20],
-        iconAnchor: [10, 20], // bottom-center
+        iconAnchor: [10, 20],
         popupAnchor: [0, -20]
       });
-    }
 
     function makePopup(props) {
       const name = props[FIELDS.name] || "(No name)";
