@@ -164,6 +164,18 @@
 
     .leaflet-control-layers .basemap-heading,
     .leaflet-control-layers .overlays-heading { font-weight: 600; margin-bottom: 4px; display: block; }
+  /* ===== Mobile info sheet (modal) ===== */
+    .sheet{ position: fixed; inset:0; z-index:1002; display:none; }
+    .sheet.open{ display:block; }
+    .sheet-backdrop{ position:absolute; inset:0; background:rgba(0,0,0,.35); }
+    .sheet-panel{ position:absolute; left:0; right:0; bottom:0; background:#fff; border-radius:16px 16px 0 0; box-shadow: 0 -6px 24px rgba(0,0,0,.25); max-height:85vh; overflow:auto; padding:16px; }
+    .sheet-close{ position:absolute; top:8px; right:8px; border:0; background:#f3f4f6; border-radius:999px; width:32px; height:32px; font-size:18px; }
+    .sheet .tip{ font-size:14px; }
+    .sheet .tip-name{ font-size:18px; margin-bottom:4px; }
+    .sheet .actions{ margin-top:10px; display:flex; gap:10px; flex-wrap:wrap; }
+    .sheet .btn-primary{ appearance:none; border:0; border-radius:10px; padding:10px 14px; background:#111; color:#fff; font-weight:700; }
+    @media (min-width: 768px){ .sheet{ display:none !important; } } /* only show on mobile */
+    .leaflet-popup-content a, .leaflet-popup-content button{ pointer-events:auto; }
   </style>
 </head>
 <body>
@@ -186,6 +198,15 @@
       <div class="legend-title desktop-only">Networks by County <span id="totalNetworksDesktop" class="county-count">0</span></div>
       <div id="legendGroups"></div>
     </aside>
+  </div>
+
+  <!-- Mobile info sheet (modal) -->
+  <div id="infoSheet" class="sheet" aria-hidden="true">
+    <div class="sheet-backdrop" data-close="1"></div>
+    <div class="sheet-panel" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+      <button class="sheet-close" type="button" data-close="1" aria-label="Close">×</button>
+      <div id="sheetContent"></div>
+    </div>
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
@@ -241,6 +262,48 @@
     const totalMobileEl = document.getElementById('totalNetworksMobile');
     let legendPopupEl = null;
     let legendPopupAnchorEl = null;
+
+    // ===== Mobile Info Sheet helpers =====
+    const sheetEl = document.getElementById('infoSheet');
+    const sheetContentEl = document.getElementById('sheetContent');
+
+    function infoSheetHtml(props = {}){
+      const rawName = (props.name && String(props.name).trim()) || 'Unnamed';
+      const emailLine = props.contact_email ? '<div><span class="label">Email:</span> <a href="mailto:'+props.contact_email+'">'+props.contact_email+'</a></div>' : '';
+      const photos = allPhotos(props);
+      return '<div class="tip">'
+        + '<div class="tip-name" id="sheetTitle">'+rawName+'</div>'
+        + '<div><span class="label">Leaders:</span> '+(props.leaders ?? '—')+'</div>'
+        + emailLine
+        + renderGallery(photos)
+        + '<div class="actions"><button class="btn-primary" data-churches="'+(rawName.replace(/"/g,'&quot;'))+'">Churches</button></div>'
+        + '</div>';
+    }
+    function openSheet(html){
+      if (!sheetEl) return;
+      sheetContentEl.innerHTML = html;
+      sheetEl.classList.add('open');
+      sheetEl.setAttribute('aria-hidden','false');
+      lockScroll();
+    }
+    function closeSheet(){
+      if (!sheetEl) return;
+      sheetEl.classList.remove('open');
+      sheetEl.setAttribute('aria-hidden','true');
+      unlockScroll();
+    }
+    if (sheetEl) {
+      sheetEl.addEventListener('click', (e) => {
+        const t = e.target;
+        if (t.matches('[data-close]')) { e.stopPropagation(); closeSheet(); }
+        const btn = t.closest('[data-churches]');
+        if (btn) {
+          e.stopPropagation();
+          const rawName = btn.getAttribute('data-churches');
+          window.location.href = '/org_map?network=' + encodeURIComponent(rawName);
+        }
+      }, { passive:false });
+    }
 
     function isMobile() { return window.matchMedia('(max-width: 767.98px)').matches; }
 
@@ -318,7 +381,14 @@
               resetHighlight(e);
               if (layer._hoverTip) { map.removeLayer(layer._hoverTip); layer._hoverTip = null; }
             });
-            layer.on('click', () => { layer.bindPopup(infoCardHtml(feature.properties), { maxWidth: 480 }).openPopup(); });
+            layer.on('click', (evt) => {
+            const props = feature.properties || {};
+            if (isMobile()) {
+              openSheet(infoSheetHtml(props));
+            } else {
+              layer.bindPopup(infoCardHtml(props), { maxWidth: 480, closeOnClick: false, autoClose: true }).openPopup();
+            }
+          });
 
             const props = feature.properties || {};
             const county = (props.County && String(props.County).trim()) || (props.county && String(props.county).trim()) || 'Unspecified';
@@ -370,7 +440,7 @@
           const label = document.createElement('span'); label.className = 'legend-name'; label.innerHTML = item.name;
           li.appendChild(swatch); li.appendChild(label); ul.appendChild(li);
 
-          // Click -> pan/zoom/highlight + open popup on the polygon
+          // Click -> pan/zoom/highlight, then open UI appropriate to device
           li.addEventListener('click', (e) => {
             e.stopPropagation();
             try {
@@ -378,20 +448,21 @@
               const b = item.layer.getBounds();
               if (b && b.isValid && b.isValid()) {
                 map.fitBounds(b.pad(0.15), { animate: true });
-                // brief highlight
                 item.layer.setStyle({ weight: 3, color: '#000', fillOpacity: 0.7 });
                 setTimeout(() => { networksGeoJson && networksGeoJson.resetStyle(item.layer); }, 1200);
-                // open popup at center with raw name & details
-                const center = b.getCenter();
-                item.layer.bindPopup(infoCardHtml(item.props), { maxWidth: 480 });
-                item.layer.openPopup(center);
-                if (item.layer.bringToFront) item.layer.bringToFront();
+                if (isMobile()) {
+                  openSheet(infoSheetHtml(item.props));
+                } else {
+                  const center = b.getCenter();
+                  item.layer.bindPopup(infoCardHtml(item.props), { maxWidth: 480, closeOnClick: false, autoClose: true });
+                  item.layer.openPopup(center);
+                  if (item.layer.bringToFront) item.layer.bringToFront();
+                }
               }
             } catch (err) {
-              console.error('Legend click pan/zoom failed:', err);
-              // fallback: show legend-side popup
-              const html = infoCardHtml(item.props);
-              showLegendPopup(li, html);
+              console.error('Legend click action failed:', err);
+              const html = infoSheetHtml(item.props);
+              openSheet(html);
             }
           });
         });
@@ -435,24 +506,12 @@
     map.whenReady(updateLabelSizes);
     window.addEventListener('resize', updateLabelSizes);
 
-    // Ensure popup links/buttons work on mobile and don't close the popup
+    // Keep popup interactions from bubbling; desktop uses Leaflet popup only
     map.on('popupopen', (e) => {
       const el = e.popup && e.popup.getElement && e.popup.getElement();
       if (!el) return;
-
-      try {
-        L.DomEvent.disableClickPropagation(el);
-        L.DomEvent.disableScrollPropagation(el);
-      } catch {}
-
-      // Keep common interactive controls from bubbling to the map
-      ['button','input','select','textarea','label'].forEach((sel) => {
-        el.querySelectorAll(sel).forEach((node) => {
-          ['click','mousedown','mouseup','touchstart','touchend','pointerdown','pointerup'].forEach((evt) => {
-            node.addEventListener(evt, (ev) => ev.stopPropagation(), { passive: false });
-          });
-        });
-      });
+      try { L.DomEvent.disableClickPropagation(el); L.DomEvent.disableScrollPropagation(el); } catch {}
+    });
 
       // Force anchor taps to navigate reliably on mobile (and not close the popup)
       el.querySelectorAll('a[href]').forEach((a) => {
@@ -467,9 +526,8 @@
         a.addEventListener('click', go, { passive: false });
         a.addEventListener('touchend', go, { passive: false });
         a.addEventListener('pointerup', go, { passive: false });
-      });
+      });    });
     });
-
   </script>
 </body>
 </html>
