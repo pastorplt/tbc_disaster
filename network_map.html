@@ -10,6 +10,7 @@
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
   <style>
+    :root { --label-size: 12px; }
     html, body { height: 100%; margin: 0; }
     #map { height: calc(100% - 60px); }
 
@@ -143,10 +144,7 @@
       text-align: center; white-space: nowrap; line-height: 1.15;
       text-shadow: 0 1px 2px rgba(255,255,255,.85), 0 0 2px rgba(255,255,255,.9);
       pointer-events: none;
-    }
-    /* Smaller starting size on mobile; will be scaled with zoom via JS */
-    @media (max-width: 767.98px) {
-      .poly-label { font-size: 11px; }
+      font-size: var(--label-size, 12px);
     }
 
     .leaflet-tooltip.hover-tip {
@@ -164,7 +162,8 @@
 
     .leaflet-control-layers .basemap-heading,
     .leaflet-control-layers .overlays-heading { font-weight: 600; margin-bottom: 4px; display: block; }
-  /* ===== Mobile info sheet (modal) ===== */
+
+    /* ===== Mobile info sheet (modal) ===== */
     .sheet{ position: fixed; inset:0; z-index:1002; display:none; }
     .sheet.open{ display:block; }
     .sheet-backdrop{ position:absolute; inset:0; background:rgba(0,0,0,.35); }
@@ -174,7 +173,6 @@
     .sheet .tip-name{ font-size:18px; margin-bottom:4px; }
     .sheet .actions{ margin-top:10px; display:flex; gap:10px; flex-wrap:wrap; }
     .sheet .actions a{ color:#0a58ca; text-decoration:underline; font-weight:700; }
-    .sheet .btn-primary{ appearance:none; border:0; border-radius:10px; padding:10px 14px; background:#111; color:#fff; font-weight:700; }
     @media (min-width: 768px){ .sheet{ display:none !important; } } /* only show on mobile */
     .leaflet-popup-content a, .leaflet-popup-content button{ pointer-events:auto; }
   </style>
@@ -272,7 +270,7 @@
       const rawName = (props.name && String(props.name).trim()) || 'Unnamed';
       const emailLine = props.contact_email ? '<div><span class="label">Email:</span> <a href="mailto:'+props.contact_email+'">'+props.contact_email+'</a></div>' : '';
       const photos = allPhotos(props);
-      return '<div class="tip">'
+      return '<div class="tip"'>
         + '<div class="tip-name" id="sheetTitle">'+rawName+'</div>'
         + '<div><span class="label">Leaders:</span> '+(props.leaders ?? '—')+'</div>'
         + emailLine
@@ -376,14 +374,14 @@
               resetHighlight(e);
               if (layer._hoverTip) { map.removeLayer(layer._hoverTip); layer._hoverTip = null; }
             });
-            layer.on('click', (evt) => {
-            const props = feature.properties || {};
-            if (isMobile()) {
-              openSheet(infoSheetHtml(props));
-            } else {
-              layer.bindPopup(infoCardHtml(props), { maxWidth: 480, closeOnClick: false, autoClose: true }).openPopup();
-            }
-          });
+            layer.on('click', () => {
+              const props = feature.properties || {};
+              if (isMobile()) {
+                openSheet(infoSheetHtml(props));
+              } else {
+                layer.bindPopup(infoCardHtml(props), { maxWidth: 480, closeOnClick: false, autoClose: true }).openPopup();
+              }
+            });
 
             const props = feature.properties || {};
             const county = (props.County && String(props.County).trim()) || (props.county && String(props.county).trim()) || 'Unspecified';
@@ -398,7 +396,7 @@
         if (b.isValid()) map.fitBounds(b.pad(0.05));
 
         buildCountyLegend(groups);
-        // Initial mobile label sizing after layers are added
+        // Initial label sizing after layers are added
         updateLabelSizes();
       });
 
@@ -482,7 +480,7 @@
         }
       });
 
-    // ===== Mobile label responsiveness to zoom =====
+    // ===== Label responsiveness to zoom (mobile & desktop) =====
     function updateLabelSizes() {
       const z = map.getZoom();
       const mobile = isMobile();
@@ -494,8 +492,8 @@
       const max = 22;
       if (size < min) size = min;
       if (size > max) size = max;
-      document.querySelectorAll('.poly-label').forEach(el => { el.style.fontSize = size.toFixed(1) + 'px'; });
-    
+      // Single DOM write using CSS variable
+      document.documentElement.style.setProperty('--label-size', size.toFixed(1) + 'px');
     }
     map.on('zoomend', updateLabelSizes);
     map.whenReady(updateLabelSizes);
@@ -508,7 +506,6 @@
       try { L.DomEvent.disableClickPropagation(el); L.DomEvent.disableScrollPropagation(el); } catch {}
     });
 
-        
   </script>
 </body>
 </html>
