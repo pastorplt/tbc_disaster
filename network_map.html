@@ -173,6 +173,7 @@
     .sheet .tip{ font-size:14px; }
     .sheet .tip-name{ font-size:18px; margin-bottom:4px; }
     .sheet .actions{ margin-top:10px; display:flex; gap:10px; flex-wrap:wrap; }
+    .sheet .actions a{ color:#0a58ca; text-decoration:underline; font-weight:700; }
     .sheet .btn-primary{ appearance:none; border:0; border-radius:10px; padding:10px 14px; background:#111; color:#fff; font-weight:700; }
     @media (min-width: 768px){ .sheet{ display:none !important; } } /* only show on mobile */
     .leaflet-popup-content a, .leaflet-popup-content button{ pointer-events:auto; }
@@ -245,7 +246,7 @@
     function allPhotos(props = []){ return [props.photo1,props.photo2,props.photo3,props.photo4,props.photo5,props.photo6].filter(u => typeof u === 'string' && u.trim()); }
     function renderGallery(photos){ if (!photos.length) return ''; const items = photos.map((p,i)=>'<a href="'+p+'" target="_blank" rel="noopener"><img src="'+p+'" alt="Photo '+(i+1)+'" loading="lazy" /></a>').join(''); return '<hr/><div class="gallery">'+items+'</div>'; }
     function churchesLine(rawName) {
-      return '<div><a href="/org_map?network='+encodeURIComponent(rawName)+'" target="_blank" rel="noopener">Churches</a></div>';
+      return '<div><a href="/org_map?network='+encodeURIComponent(rawName)+'" target="_blank" rel="noopener">Map of Network Churches</a></div>';
     }
     function infoCardHtml(props = {}){
       const rawName = (props.name && String(props.name).trim()) || 'Unnamed';
@@ -275,8 +276,8 @@
         + '<div class="tip-name" id="sheetTitle">'+rawName+'</div>'
         + '<div><span class="label">Leaders:</span> '+(props.leaders ?? '—')+'</div>'
         + emailLine
+        + churchesLine(rawName)
         + renderGallery(photos)
-        + '<div class="actions"><button class="btn-primary" data-churches="'+(rawName.replace(/"/g,'&quot;'))+'">Churches</button></div>'
         + '</div>';
     }
     function openSheet(html){
@@ -296,13 +297,8 @@
       sheetEl.addEventListener('click', (e) => {
         const t = e.target;
         if (t.matches('[data-close]')) { e.stopPropagation(); closeSheet(); }
-        const btn = t.closest('[data-churches]');
-        if (btn) {
-          e.stopPropagation();
-          const rawName = btn.getAttribute('data-churches');
-          window.location.href = '/org_map?network=' + encodeURIComponent(rawName);
-        }
       }, { passive:false });
+    });
     }
 
     function isMobile() { return window.matchMedia('(max-width: 767.98px)').matches; }
@@ -513,20 +509,7 @@
       try { L.DomEvent.disableClickPropagation(el); L.DomEvent.disableScrollPropagation(el); } catch {}
     });
 
-      // Force anchor taps to navigate reliably on mobile (and not close the popup)
-      el.querySelectorAll('a[href]').forEach((a) => {
-        const go = (ev) => {
-          ev.stopPropagation();
-          ev.preventDefault();
-          const href = a.getAttribute('href');
-          const target = a.getAttribute('target') || '_self';
-          // Defer a tick to avoid interference with Leaflet's tap handler
-          setTimeout(() => { window.open(href, target); }, 0);
-        };
-        a.addEventListener('click', go, { passive: false });
-        a.addEventListener('touchend', go, { passive: false });
-        a.addEventListener('pointerup', go, { passive: false });
-      });
+        
   </script>
 </body>
 </html>
