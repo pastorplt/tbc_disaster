@@ -245,8 +245,8 @@
 
         label.appendChild(input); label.appendChild(span); container.appendChild(label);
       });
-    });
     }
+    
     function getSelected(groupKey) { return Array.from(document.querySelectorAll(`input[type="checkbox"][data-group="${groupKey}"]:checked`)).map(i => i.value); }
 
     function featureMatchesSelections(f, sel) {
