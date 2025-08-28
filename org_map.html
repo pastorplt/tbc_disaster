@@ -37,7 +37,7 @@
 
     .leaflet-interactive { cursor: pointer; }
 
-    /* ===== Legend / Filters (unchanged) ===== */
+    /* ===== Legend / Filters ===== */
     .legend-panel {
       position: absolute; top: 70px; left: 10px;
       width: 300px; max-height: calc(100% - 90px);
@@ -76,7 +76,7 @@
     .tag-strip { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
     .chip { display: inline-block; padding: 4px 10px; border-radius: 999px; border: 1px solid transparent; font-size: 12px; line-height: 1.1; }
     .chip-colored { color: #fff; }
-.tag-pill.colored { border-color: transparent; }
+    .tag-pill.colored { border-color: transparent; }
 
     .popup hr { border:0; border-top:1px solid #e9ecef; margin:8px 0; }
 
@@ -231,7 +231,7 @@
         const label = document.createElement('label');
         label.className = 'tag-pill colored';
         label.setAttribute('for', id);
-        const bg = colorForTag(tag);
+        const bg = colorForTag(groupKey, tag);
         const fg = contrastText(bg);
         label.style.background = bg;
         label.style.color = fg;
@@ -245,8 +245,8 @@
 
         label.appendChild(input); label.appendChild(span); container.appendChild(label);
       });
+    });
     }
-    
     function getSelected(groupKey) { return Array.from(document.querySelectorAll(`input[type="checkbox"][data-group="${groupKey}"]:checked`)).map(i => i.value); }
 
     function featureMatchesSelections(f, sel) {
@@ -264,10 +264,47 @@
       return true;
     }
 
-    const PALETTE30 = ['#1f77b4','#ff7f0e','#2ca02c','#d62728','#9467bd','#8c564b','#e377c2','#7f7f7f','#bcbd22','#17becf','#393b79','#637939','#8c6d31','#843c39','#7b4173','#3182bd','#31a354','#756bb1','#636363','#e6550d','#9edae5','#c7c7c7','#bc80bd','#ffed6f','#a6cee3','#b2df8a','#fb9a99','#fdbf6f','#cab2d6','#6a3d9a'];
+    const palette30 = ['#1f77b4','#ff7f0e','#2ca02c','#d62728','#9467bd','#8c564b','#e377c2','#7f7f7f','#bcbd22','#17becf','#393b79','#637939','#8c6d31','#843c39','#7b4173','#3182bd','#31a354','#756bb1','#636363','#e6550d','#9edae5','#c7c7c7','#bc80bd','#ffed6f','#a6cee3','#b2df8a','#fb9a99','#fdbf6f','#cab2d6','#6a3d9a'];
     function hashIndex(str, m){ let h=0; for(let i=0;i<str.length;i++) h=(h*31 + str.charCodeAt(i))|0; return Math.abs(h)%m; }
-    function colorForFeature(props) { const key = `${props[FIELDS.name]||''}|${props[FIELDS.address]||''}`; return PALETTE30[ hashIndex(key, PALETTE30.length) ]; }
-    function colorForTag(tag){ return PALETTE30[ hashIndex(String(tag||''), PALETTE30.length) ]; }
+    function colorForFeature(props) { const key = `${props[FIELDS.name]||''}|${props[FIELDS.address]||''}`; return palette30[ hashIndex(key, palette30.length) ]; }
+    // === Tag color mapping (per-group, deterministic, shared with filters & popup) ===
+    const TAG_COLORS = { county: new Map(), network: new Map(), type: new Map(), category: new Map(), denomination: new Map() };
+    function canonicalizeTag(groupKey, tag){
+      let t = String(tag||'').trim();
+      if (!t) return '';
+      if (groupKey === 'county') t = t.replace(/\s*county$/i, '');
+      return t.toLowerCase();
+    }
+    function computeTagColors(features){
+      const groups = ['county','network','type','category','denomination'];
+      groups.forEach(g => { TAG_COLORS[g].clear(); });
+      const uniq = (arr) => Array.from(new Set(arr));
+      const getTags = (g) => {
+        const key = FIELDS[g];
+        if (!key) return [];
+        const raw = uniqueSortedTags(features, key);
+        return uniq(raw.map(t => canonicalizeTag(g, t)).filter(Boolean));
+      };
+      const groupsTags = {
+        county: getTags('county'),
+        network: getTags('network'),
+        type: getTags('type'),
+        category: getTags('category'),
+        denomination: getTags('denomination'),
+      };
+      Object.keys(groupsTags).forEach(g => {
+        groupsTags[g].forEach((canon, idx) => {
+          TAG_COLORS[g].set(canon, palette30[idx % palette30.length]);
+        });
+      });
+    }
+    function colorForTag(groupKey, tag){
+      const canon = canonicalizeTag(groupKey, tag);
+      const map = TAG_COLORS[groupKey];
+      if (map && map.has(canon)) return map.get(canon);
+      // Fallback to hash-based color (should rarely be used once computeTagColors runs)
+      return palette30[ hashIndex(canon, palette30.length) ];
+    }
     function contrastText(hex){ // simple YIQ contrast
       try {
         const h = hex.replace('#',''); const r=parseInt(h.slice(0,2),16), g=parseInt(h.slice(2,4),16), b=parseInt(h.slice(4,6),16);
@@ -293,14 +330,25 @@
 
     function chipsRow(props){
       const typeVals = normalizeTags(props[FIELDS.type]);
-      const countyVals = normalizeTags(props[FIELDS.county]).map(t => /county\b/i.test(t) ? t : `${t} County`);
+      const countyValsRaw = normalizeTags(props[FIELDS.county]);
       const networkVals = normalizeTags(props[FIELDS.network]);
       const categoryVals = normalizeTags(props[FIELDS.category]);
       const denomVals = normalizeTags(props[FIELDS.denomination]);
-      const makeChip = (text) => {
-        const bg = colorForTag(text); const fg = contrastText(bg);
-        return `<span class=\"chip chip-colored\" style=\"background:${bg};color:${fg};\">${text}</span>`;
+      const makeChip = (groupKey, text, displayText) => {
+        const bg = colorForTag(groupKey, text);
+        const fg = contrastText(bg);
+        return `<span class=\"chip chip-colored\" style=\"background:${bg};color:${fg};\">${displayText ?? text}</span>`;
       };
+      const chips = [
+        ...typeVals.map(t => makeChip('type', t)),
+        ...countyValsRaw.map(t => makeChip('county', t, /county\b/i.test(t) ? t : `${t} County`)),
+        ...networkVals.map(t => makeChip('network', t)),
+        ...categoryVals.map(t => makeChip('category', t)),
+        ...denomVals.map(t => makeChip('denomination', t)),
+      ];
+      if (!chips.length) return '';
+      return `<div class=\"tag-strip\">${chips.join('')}</div>`;
+    };
       const chips = [
         ...typeVals.map(makeChip),
         ...countyVals.map(makeChip),
@@ -316,10 +364,10 @@
       const name = props[FIELDS.name] || "(No name)";
       const website = props[FIELDS.website];
       const address = props[FIELDS.address];
-      return `<div class=\"popup\">
+      return `<div class="popup">
         <h3>${name}</h3>
-        ${address ? `<div class=\\"field-row\\"><b>Address:</b> ${address}</div>` : ""}
-        ${website ? `<div class=\\"field-row\\"><b>Website:</b> <a href=\\"${website}\\" target=\\"_blank\\" rel=\\"noopener\\">${website}</a></div>` : ""}
+        ${address ? `<div class="field-row"><b>Address:</b> ${address}</div>` : ""}
+        ${website ? `<div class="field-row"><b>Website:</b> <a href="${website}" target="_blank" rel="noopener">${website}</a></div>` : ""}
         ${chipsRow(props)}
       </div>`;
     }
@@ -403,6 +451,8 @@
         if (!features.length) return;
 
         FIELDS = resolveFieldsFromSample(features[0]?.properties || {});
+        // Build per-group color maps so filters and popup chips share identical colors
+        computeTagColors(allFeatures);
         buildTagList(el("#list-county"), uniqueSortedTags(features, FIELDS.county), "county");
         buildTagList(el("#list-network"), uniqueSortedTags(features, FIELDS.network), "network");
         buildTagList(el("#list-type"), uniqueSortedTags(features, FIELDS.type), "type");
