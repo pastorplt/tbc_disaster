@@ -347,16 +347,6 @@
       ];
       if (!chips.length) return '';
       return `<div class=\"tag-strip\">${chips.join('')}</div>`;
-    };
-      const chips = [
-        ...typeVals.map(makeChip),
-        ...countyVals.map(makeChip),
-        ...networkVals.map(makeChip),
-        ...categoryVals.map(makeChip),
-        ...denomVals.map(makeChip),
-      ];
-      if (!chips.length) return '';
-      return `<div class="tag-strip">${chips.join('')}</div>`;
     }
 
     function infoHtml(props) {
