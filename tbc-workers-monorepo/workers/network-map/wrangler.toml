@@ -14,5 +14,5 @@ bucket_name = "tbc-data"
 
 [vars]
 AIRTABLE_BASE_ID = "app1TcNtvts4fkqdm"
-AIRTABLE_VIEW_NAME = "Map view"
+AIRTABLE_VIEW_NAME = "Grid view"
 NETWORKS_TABLE_NAME = "Networks"
