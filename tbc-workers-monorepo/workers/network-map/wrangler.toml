@@ -9,4 +9,4 @@ zone_name = "tbc.city"
 
 [[r2_buckets]]
 binding = "NETWORK_MAP_BUCKET"
-bucket_name = "<YOUR_NETWORK_R2_BUCKET_NAME>"  # TODO: replace with your actual R2 bucket name
+bucket_name = "NETWORK_MAP_BUCKET"
