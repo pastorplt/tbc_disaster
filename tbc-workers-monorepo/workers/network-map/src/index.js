@@ -24,7 +24,7 @@ export default {
     }
 
     try {
-      if (request.method === 'GET' && pathname === '/networks.geojson') {
+      if (request.method === 'GET' && (pathname === '/networks.geojson' || pathname === '/networks/polygons.geojson')) {
         // Serve the published file from R2
         const obj = await env.NETWORK_MAP_BUCKET.get('latest.geojson');
         if (!obj) return withCORS(json({ error: 'GeoJSON not generated yet' }, 404));
@@ -36,7 +36,7 @@ export default {
         }));
       }
 
-      if (request.method === 'POST' && pathname === '/admin/regenerate') {
+      if (request.method === 'POST' && (pathname === '/admin/regenerate' || pathname === '/networks/admin/regenerate')) {
         // Protect with Bearer token
         const token = (request.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '');
         if (!token || token !== env.REGEN_TOKEN) {
