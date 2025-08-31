@@ -1,0 +1,32 @@
+name = "organization-map"
+main = "src/index.js"
+compatibility_date = "2025-08-01"
+workers_dev = true
+
+# If you want to deploy to your zone with routes, set workers_dev = false and add routes below.
+# routes = [ { pattern = "api.tbc.city/*", zone_name = "tbc.city" } ]
+
+# R2 binding (must exist in your account; name must match your Dashboard binding)
+[[r2_buckets]]
+binding = "ORG_MAP_BUCKET"
+bucket_name = "org_map_bucket"  # <-- change to your actual R2 bucket name
+
+[vars]
+
+# Optional field overrides (used by the org/disaster workers):
+# ORG_TABLE_NAME = "Master List"
+# FIELD_LAT = "Latitude"
+# FIELD_LON = "Longitude"
+# AIRTABLE_VIEW_NAME = "Published"
+
+# Secrets (set in Dashboard Integrations → Variables & Secrets, **do not** commit):
+# - AIRTABLE_TOKEN
+# - AIRTABLE_BASE_ID
+# - REGEN_TOKEN
+
+# Notes:
+# Object key in R2 typically: organization_map.geojson
+# Routes you can attach in Dashboard:
+#   GET  /orgs/organization_map.geojson
+#   POST /orgs/admin/regenerate
+#   GET  /orgs/ok

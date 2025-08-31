@@ -1,0 +1,32 @@
+name = "network-map"
+main = "src/index.js"
+compatibility_date = "2025-08-01"
+workers_dev = true
+
+# If you want to deploy to your zone with routes, set workers_dev = false and add routes below.
+# routes = [ { pattern = "api.tbc.city/*", zone_name = "tbc.city" } ]
+
+# R2 binding (must exist in your account; name must match your Dashboard binding)
+[[r2_buckets]]
+binding = "NETWORK_MAP_BUCKET"
+bucket_name = "network_map_bucket"  # <-- change to your actual R2 bucket name
+
+[vars]
+NETWORKS_TABLE_NAME = "Networks"
+# Optional field overrides (used by the org/disaster workers):
+# ORG_TABLE_NAME = "Master List"
+# FIELD_LAT = "Latitude"
+# FIELD_LON = "Longitude"
+# AIRTABLE_VIEW_NAME = "Published"
+
+# Secrets (set in Dashboard Integrations → Variables & Secrets, **do not** commit):
+# - AIRTABLE_TOKEN
+# - AIRTABLE_BASE_ID
+# - REGEN_TOKEN
+
+# Notes:
+# Object key in R2 typically: latest.geojson
+# Routes you can attach in Dashboard:
+#   GET  /networks.geojson
+#   POST /admin/regenerate
+#   (Optional) GET /img/:recordId/:idx and /image/:recordId/:idx
