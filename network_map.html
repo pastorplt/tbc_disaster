@@ -203,6 +203,21 @@
 }
 .filter-actions .clear { background:#6b7280; }
 
+
+/* Collapsible filter blocks */
+.filters-heading { font-size: 18px; font-weight: 800; margin: 6px 2px 10px; }
+.filter-block { border:1px solid #e5e7eb; border-radius:10px; background:#f9fafb; margin:8px 0; }
+.filter-summary {
+  list-style: none; cursor: pointer; padding: 10px 12px; border-radius: 10px;
+  display:flex; align-items:center; justify-content: space-between; gap:8px;
+  background:#f8fafc; border-bottom:1px solid #e5e7eb; font-weight:700; color:#111;
+}
+.filter-block[open] .filter-summary { background:#eef2ff; }
+.filter-block .filter-group { padding: 8px 10px 10px; }
+.map-and-chips { display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin-top:4px; }
+.chips-inline .chips { display:inline-flex; margin:0; }
+.legend-list { list-style:none; }
+
 </style>
 </head>
 <body>
@@ -304,14 +319,20 @@
         return 0.2126*a[0] + 0.7152*a[1] + 0.0722*a[2];
       } catch { return 0.5; }
     }
-    function chipHtml(label){
+    
+    function chipHtml(label, withDot=true){
       const color = palette30[hashIndex(String(label), palette30.length)];
       const dark = luminance(color) < 0.45;
-      return '<span class="chip'+(dark?' dark':'')+'" style="background:'+color+';"><span class="dot" style="background:'+color+'"></span>'+escapeHtml(label)+'</span>';
+      const dot = withDot ? '<span class="dot" style="background:'+color+'"></span>' : '';
+      return '<span class="chip'+(dark?' dark':'')+'" style="background:'+color+';">'+dot+escapeHtml(label)+'</span>';
     }
     function chipsHtml(labels){
       if (!labels || !labels.length) return '';
-      return '<div class="chips">'+labels.map(chipHtml).join('')+'</div>';
+      return '<div class="chips">'+labels.map(l=>chipHtml(l,true)).join('')+'</div>';
+    }
+    function chipsHtmlNoDots(labels){
+      if (!labels || !labels.length) return '';
+      return labels.map(l=>chipHtml(l,false)).join('');
     }
     function toArray(v){
       if (!v) return [];
@@ -338,212 +359,23 @@
     function buildFilterChips(){
       const statusEl = document.getElementById('statusChips');
       const leadEl   = document.getElementById('leadChips');
-      function build(el, values, set){
-        el.innerHTML = '';
-        Array.from(values).sort((a,b)=>a.localeCompare(b,undefined,{sensitivity:'base'})).forEach(val => {
-          const id = 'f_'+btoa(unescape(encodeURIComponent(''+val))).replace(/=/g,'')+Math.floor(Math.random()*1e6);
-          const color = palette30[hashIndex(String(val), palette30.length)];
-          const dark = luminance(color) < 0.45;
-          const checked = set.has(val) ? ' checked' : '';
-          el.insertAdjacentHTML('beforeend',
-            '<span class="chip-option">'
-            + '<input type="checkbox" id="'+id+'" value="'+escapeHtml(val)+'"'+checked+'/>'
-            + '<label class="chip'+(dark?' dark':'')+'" for="'+id+'" style="background:'+color+';"><span class="dot" style="background:'+color+'"></span>'+escapeHtml(val)+'</label>'
-            + '</span>'
-          );
-        });
-      }
-      build(statusEl, allStatusValues, selectedStatus);
-      build(leadEl,   allLeadValues,   selectedLeads);
-
-      // Wire up change handlers
-      statusEl.querySelectorAll('input[type="checkbox"]').forEach(input => {
-        input.addEventListener('change', () => {
-          if (input.checked) selectedStatus.add(input.value); else selectedStatus.delete(input.value);
-        });
-      });
-      leadEl.querySelectorAll('input[type="checkbox"]').forEach(input => {
-        input.addEventListener('change', () => {
-          if (input.checked) selectedLeads.add(input.value); else selectedLeads.delete(input.value);
-        });
+      
+    function build(el, values, set){
+      el.innerHTML = '';
+      Array.from(values).sort((a,b)=>a.localeCompare(b,undefined,{sensitivity:'base'})).forEach(val => {
+        const id = 'f_'+btoa(unescape(encodeURIComponent(''+val))).replace(/=/g,'')+Math.floor(Math.random()*1e6);
+        const color = palette30[hashIndex(String(val), palette30.length)];
+        const dark = luminance(color) < 0.45;
+        const checked = set.has(val) ? ' checked' : '';
+        el.insertAdjacentHTML('beforeend',
+          '<span class="chip-option">'
+          + '<input type="checkbox" id="'+id+'" value="'+escapeHtml(val)+'"'+checked+'/>'
+          + '<label class="chip'+(dark?' dark':'')+'" for="'+id+'" style="background:'+color+';">'+escapeHtml(val)+'</label>'
+          + '</span>'
+        );
       });
     }
-
-    function applyFilters(){
-      // 1) Show/hide polygons
-      networksGeoJson.eachLayer((layer) => {
-        const props = layer.feature && layer.feature.properties || {};
-        const vis = matchesFilters(props);
-        layer.setStyle({ fillOpacity: vis ? 0.5 : 0.0, opacity: vis ? 1.0 : 0.0 });
-        layer._path && (layer._path.style.pointerEvents = vis ? 'auto' : 'none');
-      });
-      // 2) Rebuild legend list
-      const filteredItems = allLegendItems.filter(it => matchesFilters(it.props));
-      const groups = new Map();
-      filteredItems.forEach(it => {
-        if (!groups.has(it.county)) groups.set(it.county, []);
-        groups.get(it.county).push(it);
-      });
-      buildCountyLegend(groups);
-    }
-
-    function clearFilters(){
-      selectedStatus.clear();
-      selectedLeads.clear();
-      buildFilterChips();
-      applyFilters();
-    }
-
-    // Hook up buttons after DOM ready
-    document.addEventListener('DOMContentLoaded', () => {
-      const applyBtn = document.getElementById('applyFilters');
-      const clearBtn = document.getElementById('clearFilters');
-      if (applyBtn) applyBtn.addEventListener('click', () => { applyFilters(); /* Collapse county section for compactness */ try{ document.getElementById('countySection').open = true; }catch{} });
-      if (clearBtn) clearBtn.addEventListener('click', () => { clearFilters(); });
-    });
-
-    function highlight(e){ e.target.setStyle({ weight: 3, color:'#000', fillOpacity: 0.7 }); }
-    function resetHighlight(e){ networksGeoJson && networksGeoJson.resetStyle(e.target); }
-    function cleanedName(name){ if (!name || typeof name !== 'string') return 'Unnamed'; return name.replace(/\bnetworks?\b/gi,'').replace(/\s+/g,' ').trim() || 'Unnamed'; }
-    function multilineName(name){ return cleanedName(name).split(/\s+/).filter(Boolean).join('<br>'); }
-    function allPhotos(props = []){ return [props.photo1,props.photo2,props.photo3,props.photo4,props.photo5,props.photo6].filter(u => typeof u === 'string' && u.trim()); }
-    function renderGallery(photos){ if (!photos.length) return ''; const items = photos.map((p,i)=>'<a href="'+p+'" target="_blank" rel="noopener"><img src="'+p+'" alt="Photo '+(i+1)+'" loading="lazy" /></a>').join(''); return '<hr/><div class="gallery">'+items+'</div>'; }
-    function churchesLine(rawName) {
-      return '<div><a href="/org_map?network='+encodeURIComponent(rawName)+'" target="_blank" rel="noopener">Map of Network Churches</a></div>';
-    }
-    
-    function infoCardHtml(props = {}){
-      const rawName = (props.name && String(props.name).trim()) || 'Unnamed';
-      const emailLine = props.contact_email ? '<div><span class="label">Email:</span> <a href="mailto:'+props.contact_email+'">'+props.contact_email+'</a></div>' : '';
-      const statusArr = toArray(props.status);
-      const leadArr   = toArray(props.unify_lead);
-      const statusBlock = statusArr.length ? '<div><span class="label">Status:</span>'+chipsHtml(statusArr)+'</div>' : '';
-      const leadBlock   = leadArr.length   ? '<div><span class="label">Unify Lead:</span>'+chipsHtml(leadArr)+'</div>' : '';
-      const photos = allPhotos(props);
-      return '<div class="tip">'
-        + '<div class="tip-name">'+rawName+'</div>'
-        + '<div><span class="label">Leaders:</span> '+(props.leaders ?? '—')+'</div>'
-        + emailLine
-        + statusBlock
-        + leadBlock
-        + churchesLine(rawName)
-        + renderGallery(photos)
-        + '</div>';
-    }
-
-
-    // Legend state & helpers
-    const legendPanel = document.getElementById('legendPanel');
-    const legendGroupsEl = document.getElementById('legendGroups');
-    const legendToggle = document.getElementById('legendToggle');
-    const totalDesktopEl = document.getElementById('totalNetworksDesktop');
-    const totalMobileEl = document.getElementById('totalNetworksMobile');
-    let legendPopupEl = null;
-    let legendPopupAnchorEl = null;
-
-    // ===== Mobile Info Sheet helpers =====
-    const sheetEl = document.getElementById('infoSheet');
-    const sheetContentEl = document.getElementById('sheetContent');
-
-    
-    function infoSheetHtml(props = {}){
-      const rawName = (props.name && String(props.name).trim()) || 'Unnamed';
-      const emailLine = props.contact_email ? '<div><span class="label">Email:</span> <a href="mailto:'+props.contact_email+'">'+props.contact_email+'</a></div>' : '';
-      const statusArr = toArray(props.status);
-      const leadArr   = toArray(props.unify_lead);
-      const statusBlock = statusArr.length ? '<div><span class="label">Status:</span>'+chipsHtml(statusArr)+'</div>' : '';
-      const leadBlock   = leadArr.length   ? '<div><span class="label">Unify Lead:</span>'+chipsHtml(leadArr)+'</div>' : '';
-      const photos = allPhotos(props);
-      return '<div class="tip">'
-        + '<div class="tip-name" id="sheetTitle">'+rawName+'</div>'
-        + '<div><span class="label">Leaders:</span> '+(props.leaders ?? '—')+'</div>'
-        + emailLine
-        + statusBlock
-        + leadBlock
-        + churchesLine(rawName)
-        + renderGallery(photos)
-        + '</div>';
-    }
-
-
-    function isMobile() { return window.matchMedia('(max-width: 767.98px)').matches; }
-
-    function isTouch() { return window.matchMedia('(pointer: coarse)').matches; }
-
-    L.DomEvent.disableScrollPropagation(legendPanel);
-    L.DomEvent.disableClickPropagation(legendPanel);
-
-    let scrollLockY = 0;
-    function lockScroll() { scrollLockY = window.scrollY || document.documentElement.scrollTop || 0; document.body.style.position='fixed'; document.body.style.top=`-${scrollLockY}px`; document.body.style.left='0'; document.body.style.right='0'; document.body.style.width='100%'; document.body.style.overflow='hidden'; document.documentElement.style.overflow='hidden'; }
-    function unlockScroll() { document.body.style.position=''; document.body.style.top=''; document.body.style.left=''; document.body.style.right=''; document.body.style.width=''; document.body.style.overflow=''; document.documentElement.style.overflow=''; window.scrollTo(0, scrollLockY); }
-
-    function openLegend() {
-      if (isMobile()) { legendPanel.classList.add('open'); lockScroll(); }
-      legendPanel.classList.remove('closed');
-      if (legendToggle) legendToggle.setAttribute('aria-expanded', 'true');
-    }
-    function closeLegend() {
-      if (isMobile()) { legendPanel.classList.remove('open'); unlockScroll(); }
-      legendPanel.classList.add('closed');
-      if (legendToggle) legendToggle.setAttribute('aria-expanded', 'false');
-    }
-    if (legendToggle) legendToggle.addEventListener('click', () => {
-      const isHiddenDesktop = legendPanel.classList.contains('closed');
-      const isOpenMobile = legendPanel.classList.contains('open');
-      (isMobile() ? !isOpenMobile : isHiddenDesktop) ? openLegend() : closeLegend();
-    });
-
-    function repositionLegendPopup() {
-      if (!legendPopupEl || !legendPopupAnchorEl) return;
-      const panelRect = legendPanel.getBoundingClientRect();
-      const aRect = legendPopupAnchorEl.getBoundingClientRect();
-      const relativeTop = (aRect.top - panelRect.top) + legendPanel.scrollTop + legendPopupAnchorEl.offsetHeight + 6;
-      legendPopupEl.style.top = relativeTop + 'px';
-    }
-    legendPanel.addEventListener('scroll', repositionLegendPopup);
-    window.addEventListener('resize', repositionLegendPopup);
-
-    function showLegendPopup(anchorEl, html) {
-      if (legendPopupEl) legendPopupEl.remove();
-      const el = document.createElement('div');
-      el.className = 'legend-popup';
-      el.innerHTML = html; // no close button
-      legendPanel.appendChild(el);
-
-      const panelRect = legendPanel.getBoundingClientRect();
-      const aRect = anchorEl.getBoundingClientRect();
-      const relativeTop = (aRect.top - panelRect.top) + legendPanel.scrollTop + anchorEl.offsetHeight + 6;
-      el.style.top = relativeTop + 'px';
-
-      legendPopupEl = el;
-      legendPopupAnchorEl = anchorEl;
-      if (isMobile()) openLegend();
-    }
-
-    // Load Networks
-    let networksGeoJson;
-    fetch('https://api.tbc.city/networks/polygons.geojson', { cache: 'no-cache' })
-      .then(res => res.json())
-      .then(data => {
-        const groups = new Map();
-
-        networksGeoJson = L.geoJSON(data, {
-          style: styleNetworks,
-          onEachFeature: (feature, layer) => {
-            // Labels over polygons use cleaned name
-            layer.bindTooltip(multilineName(feature.properties?.name), { permanent: true, direction: 'center', className: 'poly-label', opacity: 1 });
-            layer.on('mouseover', (e) => { if (isTouch()) return; 
-              highlight(e);
-              const tip = L.tooltip({ className: 'hover-tip', direction: 'top', opacity: 0.95, offset: [0,-8] })
-                .setContent(infoCardHtml(feature.properties))
-                .setLatLng(e.latlng);
-              layer._hoverTip = tip; tip.addTo(map);
-            });
-            layer.on('mousemove', (e) => { if (isTouch()) return;  if (layer._hoverTip) layer._hoverTip.setLatLng(e.latlng); });
-            layer.on('mouseout', (e) => { if (isTouch()) return; 
-              resetHighlight(e);
-              if (layer._hoverTip) { map.removeLayer(layer._hoverTip); layer._hoverTip = null; }
-            });
+    );
             layer.on('click', () => {
               const props = feature.properties || {};
               if (isMobile()) {
