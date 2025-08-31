@@ -359,6 +359,7 @@
     function buildFilterChips(){
       const statusEl = document.getElementById('statusChips');
       const leadEl   = document.getElementById('leadChips');
+    }
       
     function build(el, values, set){
       el.innerHTML = '';
@@ -375,7 +376,6 @@
         );
       });
     }
-    );
             layer.on('click', () => {
               const props = feature.properties || {};
               if (isMobile()) {
