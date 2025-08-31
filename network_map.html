@@ -175,7 +175,35 @@
     .sheet .actions a{ color:#0a58ca; text-decoration:underline; font-weight:700; }
     @media (min-width: 768px){ .sheet{ display:none !important; } } /* only show on mobile */
     .leaflet-popup-content a, .leaflet-popup-content button{ pointer-events:auto; }
-  </style>
+  
+/* === Tag Chips (popup + filters) === */
+.chips { display:flex; flex-wrap:wrap; gap:6px; margin:6px 0 2px; }
+.chip {
+  display:inline-flex; align-items:center; gap:6px;
+  padding:4px 8px; border-radius:999px; font-size:12px; font-weight:600;
+  color:#111; border:1px solid rgba(0,0,0,.12); background:#f3f4f6;
+}
+.chip.dark { color:#fff; border-color: rgba(0,0,0,.25); }
+.chip .dot { width:10px; height:10px; border-radius:999px; box-shadow: inset 0 0 0 1px rgba(0,0,0,.15); }
+
+/* === Filters section (Status + Unify Lead) === */
+.filter-section { border:1px solid #e5e7eb; border-radius:10px; padding:8px; background:#f9fafb; margin-bottom:10px; }
+.filter-section h4 { margin:4px 0 8px; font-size:13px; font-weight:700; }
+.filter-group { margin:6px 0 8px; }
+.filter-group .label { font-size:12px; font-weight:700; color:#374151; margin-bottom:4px; }
+.chip-select { display:flex; flex-wrap:wrap; gap:6px; }
+.chip-option { position:relative; display:inline-block; }
+.chip-option input { position:absolute; opacity:0; pointer-events:none; }
+.chip-option label { cursor:pointer; }
+.chip-option input:checked + label { outline:2px solid #111; outline-offset:1px; }
+
+.filter-actions { display:flex; gap:8px; margin-top:6px; }
+.filter-actions button {
+  background:#111; color:#fff; border:0; border-radius:8px; padding:6px 10px; font-size:13px; font-weight:700;
+}
+.filter-actions .clear { background:#6b7280; }
+
+</style>
 </head>
 <body>
   <div id="navbar-include"></div>
@@ -189,14 +217,40 @@
       Legend
     </button>
 
-    <aside class="legend-panel" id="legendPanel" aria-label="Networks legend">
-      <div class="legend-header">
-        <div class="legend-grabber" aria-hidden="true"></div>
-        <div class="legend-title">Networks by County <span id="totalNetworksMobile" class="county-count">0</span></div>
-      </div>
-      <div class="legend-title desktop-only">Networks by County <span id="totalNetworksDesktop" class="county-count">0</span></div>
-      <div id="legendGroups"></div>
-    </aside>
+    
+<aside class="legend-panel" id="legendPanel" aria-label="Filters panel">
+  <div class="legend-header">
+    <div class="legend-grabber" aria-hidden="true"></div>
+    <div class="legend-title">Filters</div>
+  </div>
+
+  <!-- Filters UI -->
+  <section class="filter-section" id="filtersUI" aria-label="Filter controls">
+    <h4>Filter Networks</h4>
+    <div class="filter-group">
+      <div class="label">Status</div>
+      <div id="statusChips" class="chip-select"></div>
+    </div>
+    <div class="filter-group">
+      <div class="label">Unify Lead</div>
+      <div id="leadChips" class="chip-select"></div>
+    </div>
+    <div class="filter-actions">
+      <button id="applyFilters" type="button">Apply</button>
+      <button id="clearFilters" class="clear" type="button">Clear</button>
+    </div>
+  </section>
+
+  <!-- Collapsible Networks by County -->
+  <details id="countySection" class="county-group" open>
+    <summary class="legend-title">
+      Networks by County
+      <span id="totalNetworksDesktop" class="county-count">0</span>
+    </summary>
+    <div id="legendGroups"></div>
+  </details>
+</aside>
+
   </div>
 
   <!-- Mobile info sheet (modal) -->
@@ -237,6 +291,117 @@
     function hashIndex(str, m) { let h = 0; for (let i=0;i<str.length;i++) h = (h*31 + str.charCodeAt(i))|0; return Math.abs(h)%m; }
     function colorForFeature(ft) { const p = ft.properties || {}; const key = String(p.id || p.name || JSON.stringify(ft.geometry) || Math.random()); return palette30[hashIndex(key, palette30.length)]; }
     function styleNetworks(ft) { return { color: '#333', weight: 1.5, fillColor: colorForFeature(ft), fillOpacity: 0.5 }; }
+
+    // === Chip utilities ===
+    function luminance(hex) {
+      try {
+        const c = hex.replace('#','');
+        const r = parseInt(c.substring(0,2),16)/255;
+        const g = parseInt(c.substring(2,4),16)/255;
+        const b = parseInt(c.substring(4,6),16)/255;
+        // relative luminance
+        const a = [r,g,b].map(v => (v <= 0.03928) ? v/12.92 : Math.pow((v+0.055)/1.055, 2.4));
+        return 0.2126*a[0] + 0.7152*a[1] + 0.0722*a[2];
+      } catch { return 0.5; }
+    }
+    function chipHtml(label){
+      const color = palette30[hashIndex(String(label), palette30.length)];
+      const dark = luminance(color) < 0.45;
+      return '<span class="chip'+(dark?' dark':'')+'" style="background:'+color+';"><span class="dot" style="background:'+color+'"></span>'+escapeHtml(label)+'</span>';
+    }
+    function chipsHtml(labels){
+      if (!labels || !labels.length) return '';
+      return '<div class="chips">'+labels.map(chipHtml).join('')+'</div>';
+    }
+    function toArray(v){
+      if (!v) return [];
+      if (Array.isArray(v)) return v.filter(Boolean).map(String);
+      return String(v).split(/[,;|/]/).map(s=>s.trim()).filter(Boolean);
+    }
+    function escapeHtml(s){ return String(s).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
+
+    // === Filter state ===
+    const selectedStatus = new Set();
+    const selectedLeads  = new Set();
+    let allLegendItems = []; // {county, name, color, props, layer}
+    let allStatusValues = new Set();
+    let allLeadValues   = new Set();
+
+    function matchesFilters(props){
+      const statusVals = toArray(props.status);
+      const leadVals   = toArray(props.unity_lead);
+      const statusOK = (selectedStatus.size === 0) || statusVals.some(v => selectedStatus.has(v));
+      const leadOK   = (selectedLeads.size  === 0) || leadVals.some(v => selectedLeads.has(v));
+      return statusOK && leadOK;
+    }
+
+    function buildFilterChips(){
+      const statusEl = document.getElementById('statusChips');
+      const leadEl   = document.getElementById('leadChips');
+      function build(el, values, set){
+        el.innerHTML = '';
+        Array.from(values).sort((a,b)=>a.localeCompare(b,undefined,{sensitivity:'base'})).forEach(val => {
+          const id = 'f_'+btoa(unescape(encodeURIComponent(''+val))).replace(/=/g,'')+Math.floor(Math.random()*1e6);
+          const color = palette30[hashIndex(String(val), palette30.length)];
+          const dark = luminance(color) < 0.45;
+          const checked = set.has(val) ? ' checked' : '';
+          el.insertAdjacentHTML('beforeend',
+            '<span class="chip-option">'
+            + '<input type="checkbox" id="'+id+'" value="'+escapeHtml(val)+'"'+checked+'/>'
+            + '<label class="chip'+(dark?' dark':'')+'" for="'+id+'" style="background:'+color+';"><span class="dot" style="background:'+color+'"></span>'+escapeHtml(val)+'</label>'
+            + '</span>'
+          );
+        });
+      }
+      build(statusEl, allStatusValues, selectedStatus);
+      build(leadEl,   allLeadValues,   selectedLeads);
+
+      // Wire up change handlers
+      statusEl.querySelectorAll('input[type="checkbox"]').forEach(input => {
+        input.addEventListener('change', () => {
+          if (input.checked) selectedStatus.add(input.value); else selectedStatus.delete(input.value);
+        });
+      });
+      leadEl.querySelectorAll('input[type="checkbox"]').forEach(input => {
+        input.addEventListener('change', () => {
+          if (input.checked) selectedLeads.add(input.value); else selectedLeads.delete(input.value);
+        });
+      });
+    }
+
+    function applyFilters(){
+      // 1) Show/hide polygons
+      networksGeoJson.eachLayer((layer) => {
+        const props = layer.feature && layer.feature.properties || {};
+        const vis = matchesFilters(props);
+        layer.setStyle({ fillOpacity: vis ? 0.5 : 0.0, opacity: vis ? 1.0 : 0.0 });
+        layer._path && (layer._path.style.pointerEvents = vis ? 'auto' : 'none');
+      });
+      // 2) Rebuild legend list
+      const filteredItems = allLegendItems.filter(it => matchesFilters(it.props));
+      const groups = new Map();
+      filteredItems.forEach(it => {
+        if (!groups.has(it.county)) groups.set(it.county, []);
+        groups.get(it.county).push(it);
+      });
+      buildCountyLegend(groups);
+    }
+
+    function clearFilters(){
+      selectedStatus.clear();
+      selectedLeads.clear();
+      buildFilterChips();
+      applyFilters();
+    }
+
+    // Hook up buttons after DOM ready
+    document.addEventListener('DOMContentLoaded', () => {
+      const applyBtn = document.getElementById('applyFilters');
+      const clearBtn = document.getElementById('clearFilters');
+      if (applyBtn) applyBtn.addEventListener('click', () => { applyFilters(); /* Collapse county section for compactness */ try{ document.getElementById('countySection').open = true; }catch{} });
+      if (clearBtn) clearBtn.addEventListener('click', () => { clearFilters(); });
+    });
+
     function highlight(e){ e.target.setStyle({ weight: 3, color:'#000', fillOpacity: 0.7 }); }
     function resetHighlight(e){ networksGeoJson && networksGeoJson.resetStyle(e.target); }
     function cleanedName(name){ if (!name || typeof name !== 'string') return 'Unnamed'; return name.replace(/\bnetworks?\b/gi,'').replace(/\s+/g,' ').trim() || 'Unnamed'; }
@@ -246,12 +411,26 @@
     function churchesLine(rawName) {
       return '<div><a href="/org_map?network='+encodeURIComponent(rawName)+'" target="_blank" rel="noopener">Map of Network Churches</a></div>';
     }
+    
     function infoCardHtml(props = {}){
       const rawName = (props.name && String(props.name).trim()) || 'Unnamed';
       const emailLine = props.contact_email ? '<div><span class="label">Email:</span> <a href="mailto:'+props.contact_email+'">'+props.contact_email+'</a></div>' : '';
+      const statusArr = toArray(props.status);
+      const leadArr   = toArray(props.unity_lead);
+      const statusBlock = statusArr.length ? '<div><span class="label">Status:</span>'+chipsHtml(statusArr)+'</div>' : '';
+      const leadBlock   = leadArr.length   ? '<div><span class="label">Unify Lead:</span>'+chipsHtml(leadArr)+'</div>' : '';
       const photos = allPhotos(props);
-      return '<div class="tip"><div class="tip-name">'+rawName+'</div><div><span class="label">Leaders:</span> '+(props.leaders ?? '—')+'</div>'+emailLine+churchesLine(rawName)+renderGallery(photos)+'</div>';
+      return '<div class="tip">'
+        + '<div class="tip-name">'+rawName+'</div>'
+        + '<div><span class="label">Leaders:</span> '+(props.leaders ?? '—')+'</div>'
+        + emailLine
+        + statusBlock
+        + leadBlock
+        + churchesLine(rawName)
+        + renderGallery(photos)
+        + '</div>';
     }
+
 
     // Legend state & helpers
     const legendPanel = document.getElementById('legendPanel');
@@ -266,37 +445,26 @@
     const sheetEl = document.getElementById('infoSheet');
     const sheetContentEl = document.getElementById('sheetContent');
 
+    
     function infoSheetHtml(props = {}){
       const rawName = (props.name && String(props.name).trim()) || 'Unnamed';
       const emailLine = props.contact_email ? '<div><span class="label">Email:</span> <a href="mailto:'+props.contact_email+'">'+props.contact_email+'</a></div>' : '';
+      const statusArr = toArray(props.status);
+      const leadArr   = toArray(props.unity_lead);
+      const statusBlock = statusArr.length ? '<div><span class="label">Status:</span>'+chipsHtml(statusArr)+'</div>' : '';
+      const leadBlock   = leadArr.length   ? '<div><span class="label">Unify Lead:</span>'+chipsHtml(leadArr)+'</div>' : '';
       const photos = allPhotos(props);
       return '<div class="tip">'
         + '<div class="tip-name" id="sheetTitle">'+rawName+'</div>'
         + '<div><span class="label">Leaders:</span> '+(props.leaders ?? '—')+'</div>'
         + emailLine
+        + statusBlock
+        + leadBlock
         + churchesLine(rawName)
         + renderGallery(photos)
         + '</div>';
     }
-    function openSheet(html){
-      if (!sheetEl) return;
-      sheetContentEl.innerHTML = html;
-      sheetEl.classList.add('open');
-      sheetEl.setAttribute('aria-hidden','false');
-      lockScroll();
-    }
-    function closeSheet(){
-      if (!sheetEl) return;
-      sheetEl.classList.remove('open');
-      sheetEl.setAttribute('aria-hidden','true');
-      unlockScroll();
-    }
-    if (sheetEl) {
-      sheetEl.addEventListener('click', (e) => {
-        const t = e.target;
-        if (t.matches('[data-close]')) { e.stopPropagation(); closeSheet(); }
-      }, { passive:false });
-    }
+
 
     function isMobile() { return window.matchMedia('(max-width: 767.98px)').matches; }
 
@@ -388,16 +556,20 @@
             const props = feature.properties || {};
             const county = (props.County && String(props.County).trim()) || (props.county && String(props.county).trim()) || 'Unspecified';
             const nameClean = cleanedName(props.name || 'Unnamed');
-            const item = { name: nameClean, color: colorForFeature(feature), props, layer };
-            if (!groups.has(county)) groups.set(county, []);
-            groups.get(county).push(item);
+            const item = { county, name: nameClean, color: colorForFeature(feature), props, layer };
+            allLegendItems.push(item);
+
+            // Collect filter values
+            toArray(props.status).forEach(v => allStatusValues.add(v));
+            toArray(props.unity_lead).forEach(v => allLeadValues.add(v));
           }
         }).addTo(networksGroup);
 
         const b = networksGeoJson.getBounds();
         if (b.isValid()) map.fitBounds(b.pad(0.05));
 
-        buildCountyLegend(groups);
+        buildFilterChips();
+        applyFilters();
         // Initial label sizing after layers are added
         updateLabelSizes();
       });
