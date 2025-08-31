@@ -98,7 +98,7 @@ export default {
               county: normalizeTextField(f['County']),
               tags: normalizeTextField(f['Tags']),
               number_of_churches: f['Number of Churches'] ?? '',
-              unity_lead: normalizeTextField(f['Unity Lead']),
+              unify_lead: normalizeTextField(f['Unify Lead']),
               photo1, photo2, photo3, photo4, photo5, photo6,
               photo_count,
               image1, image2, image3, image4, image5, image6,
