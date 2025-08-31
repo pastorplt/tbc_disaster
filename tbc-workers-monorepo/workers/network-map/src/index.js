@@ -8,7 +8,7 @@
 //   AIRTABLE_BASE_ID
 //   NETWORKS_TABLE_NAME
 //   (optional) AIRTABLE_VIEW_NAME
-//   REGEN_TOKEN
+//   REGEN_TOKEN 
 //
 // Requires (Settings → Bindings → R2 bucket):
 //   Binding name: NETWORK_MAP_BUCKET  (points to your R2 bucket)
