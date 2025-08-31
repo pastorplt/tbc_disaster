@@ -354,7 +354,7 @@
 
     // Load Networks
     let networksGeoJson;
-    fetch('https://api.tbc.city/networks.geojson', { cache: 'no-cache' })
+    fetch('https://api.tbc.city/networks/polygons.geojson', { cache: 'no-cache' })
       .then(res => res.json())
       .then(data => {
         const groups = new Map();
