@@ -9,4 +9,4 @@ zone_name = "tbc.city"
 
 [[r2_buckets]]
 binding = "ORG_PINS_BUCKET"
-bucket_name = "<tbc-data>"
+bucket_name = "tbc-data"
