@@ -457,24 +457,6 @@ function infoCardHtml(props = {}){
     + renderGallery(photos)
     + '</div>';
 }
-){
-      const rawName = (props.name && String(props.name).trim()) || 'Unnamed';
-      const emailLine = props.contact_email ? '<div><span class="label">Email:</span> <a href="mailto:'+props.contact_email+'">'+props.contact_email+'</a></div>' : '';
-      const statusArr = toArray(props.status);
-      const leadArr   = toArray(props.unify_lead);
-      const statusBlock = statusArr.length ? '<div><span class="label">Status:</span>'+chipsHtml(statusArr)+'</div>' : '';
-      const leadBlock   = leadArr.length   ? '<div><span class="label">Unify Lead:</span>'+chipsHtml(leadArr)+'</div>' : '';
-      const photos = allPhotos(props);
-      return '<div class="tip">'
-        + '<div class="tip-name">'+rawName+'</div>'
-        + '<div><span class="label">Leaders:</span> '+(props.leaders ?? '—')+'</div>'
-        + emailLine
-        + statusBlock
-        + leadBlock
-        + churchesLine(rawName)
-        + renderGallery(photos)
-        + '</div>';
-    }
 
 
     // Legend state & helpers
