@@ -9,4 +9,4 @@ zone_name = "tbc.city"
 
 [[r2_buckets]]
 binding = "NETWORK_MAP_BUCKET"
-bucket_name = "NETWORK_MAP_BUCKET"
+bucket_name = "tbc-data"
