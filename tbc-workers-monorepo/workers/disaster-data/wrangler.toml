@@ -2,6 +2,7 @@ name = "disaster-data"
 main = "src/index.js"
 compatibility_date = "2025-08-01"
 workers_dev = false
+keep_vars = true
 
 [[routes]]
 pattern = "api.tbc.city/disaster/*"
@@ -10,3 +11,8 @@ zone_name = "tbc.city"
 [[r2_buckets]]
 binding = "ORG_PINS_BUCKET"
 bucket_name = "tbc-data"
+
+[vars]
+AIRTABLE_BASE_ID = "app1TcNtvts4fkqdm"
+AIRTABLE_VIEW_NAME = "Grid view"
+ORG_TABLE_NAME = "Organizations"
