@@ -329,7 +329,7 @@
 
     function matchesFilters(props){
       const statusVals = toArray(props.status);
-      const leadVals   = toArray(props.unity_lead);
+      const leadVals   = toArray(props.unify_lead);
       const statusOK = (selectedStatus.size === 0) || statusVals.some(v => selectedStatus.has(v));
       const leadOK   = (selectedLeads.size  === 0) || leadVals.some(v => selectedLeads.has(v));
       return statusOK && leadOK;
@@ -416,7 +416,7 @@
       const rawName = (props.name && String(props.name).trim()) || 'Unnamed';
       const emailLine = props.contact_email ? '<div><span class="label">Email:</span> <a href="mailto:'+props.contact_email+'">'+props.contact_email+'</a></div>' : '';
       const statusArr = toArray(props.status);
-      const leadArr   = toArray(props.unity_lead);
+      const leadArr   = toArray(props.unify_lead);
       const statusBlock = statusArr.length ? '<div><span class="label">Status:</span>'+chipsHtml(statusArr)+'</div>' : '';
       const leadBlock   = leadArr.length   ? '<div><span class="label">Unify Lead:</span>'+chipsHtml(leadArr)+'</div>' : '';
       const photos = allPhotos(props);
@@ -450,7 +450,7 @@
       const rawName = (props.name && String(props.name).trim()) || 'Unnamed';
       const emailLine = props.contact_email ? '<div><span class="label">Email:</span> <a href="mailto:'+props.contact_email+'">'+props.contact_email+'</a></div>' : '';
       const statusArr = toArray(props.status);
-      const leadArr   = toArray(props.unity_lead);
+      const leadArr   = toArray(props.unify_lead);
       const statusBlock = statusArr.length ? '<div><span class="label">Status:</span>'+chipsHtml(statusArr)+'</div>' : '';
       const leadBlock   = leadArr.length   ? '<div><span class="label">Unify Lead:</span>'+chipsHtml(leadArr)+'</div>' : '';
       const photos = allPhotos(props);
@@ -561,7 +561,7 @@
 
             // Collect filter values
             toArray(props.status).forEach(v => allStatusValues.add(v));
-            toArray(props.unity_lead).forEach(v => allLeadValues.add(v));
+            toArray(props.unify_lead).forEach(v => allLeadValues.add(v));
           }
         }).addTo(networksGroup);
 
