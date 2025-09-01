@@ -18,6 +18,6 @@ jobs:
           
       - name: Mirror to destination repository
         run: |
-          git remote add mirror https://${{ secrets.PAT_TOKEN }}@github.com/${{ secrets.MIRROR_REPO }}.git
+          git remote add mirror https://${{ secrets.PAT_TOKEN }}@github.com/pastorplt/tbc_public_maps.git
           git push mirror --all --force
           git push mirror --tags --force
