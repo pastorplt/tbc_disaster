@@ -435,12 +435,14 @@
 
     // Hook up buttons after DOM ready
     document.addEventListener('DOMContentLoaded', () => {
-      // Hide filter sections on maps subdomain
+      // Hide filter sections and related elements on maps subdomain
       if (isMapsSubdomain) {
         const statusSection = document.getElementById('statusSection');
         const leadSection = document.getElementById('leadSection');
+        const filtersUI = document.getElementById('filtersUI');
         if (statusSection) statusSection.style.display = 'none';
         if (leadSection) leadSection.style.display = 'none';
+        if (filtersUI) filtersUI.style.display = 'none';
       }
       
       const applyBtn = document.getElementById('applyFilters');
