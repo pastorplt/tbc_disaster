@@ -17,11 +17,11 @@ jobs:
           echo "Ref: ${{ github.ref }}"
           
           echo "=== Secret Status ==="
-          if [ -n "${{ secrets.MIRROR_TOKEN }}" ]; then
-            echo "✅ MIRROR_TOKEN is set (length: ${#MIRROR_TOKEN})"
-            echo "Token starts with: ${MIRROR_TOKEN:0:4}..."
+          if [ -n "${{ secrets.NEW_MIRROR_TOKEN }}" ]; then
+            echo "✅ NEW_MIRROR_TOKEN is set (length: ${#NEW_MIRROR_TOKEN})"
+            echo "Token starts with: ${NEW_MIRROR_TOKEN:0:4}..."
           else
-            echo "❌ MIRROR_TOKEN is not set"
+            echo "❌ NEW_MIRROR_TOKEN is not set"
           fi
           
           if [ -n "${{ secrets.MIRROR_REPO }}" ]; then
@@ -33,7 +33,7 @@ jobs:
       - name: Test GitHub API access
         run: |
           echo "=== Testing GitHub API ==="
-          curl -H "Authorization: token ${{ secrets.MIRROR_TOKEN }}" \
+          curl -H "Authorization: token ${{ secrets.NEW_MIRROR_TOKEN }}" \
                -s -o /tmp/user.json \
                -w "HTTP Status: %{http_code}\n" \
                https://api.github.com/user
@@ -46,7 +46,7 @@ jobs:
       - name: Test destination repository access
         run: |
           echo "=== Testing destination repository access ==="
-          curl -H "Authorization: token ${{ secrets.MIRROR_TOKEN }}" \
+          curl -H "Authorization: token ${{ secrets.NEW_MIRROR_TOKEN }}" \
                -s -o /tmp/repo.json \
                -w "HTTP Status: %{http_code}\n" \
                "https://api.github.com/repos/${{ secrets.MIRROR_REPO }}"
@@ -63,7 +63,7 @@ jobs:
           git config --global user.email "actions@github.com"
           
           echo "Attempting to add remote..."
-          git remote add test-mirror https://${{ secrets.MIRROR_TOKEN }}@github.com/${{ secrets.MIRROR_REPO }}.git
+          git remote add test-mirror https://${{ secrets.NEW_MIRROR_TOKEN }}@github.com/${{ secrets.MIRROR_REPO }}.git
           
           echo "Attempting to fetch from remote..."
           git ls-remote test-mirror || echo "ls-remote failed with exit code $?"
