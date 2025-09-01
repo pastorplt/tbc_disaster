@@ -21,7 +21,7 @@
       // ---------- Active-link highlight ----------
       var file = (location.pathname.split('/').pop() || 'index.html').split('?')[0].split('#')[0];
 
-      // map file → selector in the navbar
+      // map file â†’ selector in the navbar
       var map = {
         'network_map.html': 'a[href="network_map.html"]',
         'org_map.html': 'a[href="org_map.html"]',
@@ -42,7 +42,7 @@
         }
       }
 
-      // If we're on a Maps subpage, also highlight the "Maps ▾" parent
+      // If we're on a Maps subpage, also highlight the "Maps â–¾" parent
       var mapsFiles = ['network_map.html', 'org_map.html', 'disaster_data.html'];
       if (mapsFiles.indexOf(file) !== -1) {
         var mapsDropdowns = mount.querySelectorAll('.dropdown-toggle');
@@ -54,7 +54,7 @@
         }
       }
 
-      // If we're on a View subpage, also highlight the "View ▾" parent
+      // If we're on a View subpage, also highlight the "View â–¾" parent
       var viewFiles = ['organizations.html','leaders.html','networks.html'];
       if (viewFiles.indexOf(file) !== -1) {
         var viewDropdowns = mount.querySelectorAll('.dropdown-toggle');
@@ -66,7 +66,7 @@
         }
       }
 
-      // If we're on the root (index.html) there's no "Home" link – logo serves as home.
+      // If we're on the root (index.html) there's no "Home" link â€“ logo serves as home.
     })
     .catch(function(err){
       console.error('Navbar include failed:', err);
