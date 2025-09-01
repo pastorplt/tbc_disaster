@@ -15,6 +15,6 @@ jobs:
         run: |
           git config --global user.name "GitHub Mirror Bot"
           git config --global user.email "actions@github.com"
-          git remote add mirror https://x-access-token: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@github.com/pastorplt/tbc_public_maps.git
+          git remote add mirror https://x-access-token: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@github.com/pastorplt/tbc_public_maps.git
           git push mirror --all --force
           git push mirror --tags --force
