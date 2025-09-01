@@ -446,8 +446,22 @@
         buildTagList(el("#list-county"), uniqueSortedTags(features, FIELDS.county), "county");
         buildTagList(el("#list-network"), uniqueSortedTags(features, FIELDS.network), "network");
         buildTagList(el("#list-type"), uniqueSortedTags(features, FIELDS.type), "type");
-        buildTagList(el("#list-category"), uniqueSortedTags(features, FIELDS.category), "category");
-        buildTagList(el("#list-denomination"), uniqueSortedTags(features, FIELDS.denomination), "denomination");
+        
+        // category and denomination hide or show behavior
+        const catTags = uniqueSortedTags(features, FIELDS.category);
+        const denomTags = uniqueSortedTags(features, FIELDS.denomination);
+        
+        if (catTags.length) {
+          buildTagList(el("#list-category"), catTags, "category");
+        } else {
+          el("#grp-category").style.display = "none";
+        }
+        
+        if (denomTags.length) {
+          buildTagList(el("#list-denomination"), denomTags, "denomination");
+        } else {
+          el("#grp-denomination").style.display = "none";
+        }
 
         drawMarkers(allFeatures);
         preselectFromParams();
