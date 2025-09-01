@@ -68,6 +68,18 @@
     }
     .legend-title .county-count { margin-left: 8px; }
 
+    /* Darker styling for Networks by County */
+    #countySection.filter-block {
+    background: #e2e8f0; /* slightly darker shade */
+    border-color: #cbd5e1;
+    }
+    #countySection .filter-summary {
+    background: #e5e7eb;
+    }
+    #countySection[open] .filter-summary {
+    background: #dbeafe;
+    }
+
     .county-group { margin-bottom: 6px; border-radius: 8px; }
     .county-group summary {
       list-style: none; cursor: pointer;
@@ -239,37 +251,41 @@
     <div class="legend-title">Filters</div>
   </div>
 
-  
-<!-- Filters UI -->
-<section class="filter-section" id="filtersUI" aria-label="Filter controls">
-  <h3 class="filters-heading">Filter Networks</h3>
-
-  <details class="filter-block" id="statusSection">
-    <summary class="filter-summary">Status</summary>
-    <div class="filter-group">
-      <div id="statusChips" class="chip-select"></div>
-    </div>
-  </details>
-
-  <details class="filter-block" id="leadSection">
-    <summary class="filter-summary">Unify Lead</summary>
-    <div class="filter-group">
-      <div id="leadChips" class="chip-select"></div>
-    </div>
-  </details>
-
-  <div class="filter-actions">
-    <button id="applyFilters" type="button">Apply</button>
-    <button id="clearFilters" class="clear" type="button">Clear</button>
-  </div>
-</section>
-
+<!-- County Section first -->
 <details id="countySection" class="filter-block">
-  <summary class="filter-summary">
-    Network by County <span id="totalNetworksDesktop" class="county-count">0</span>
-  </summary>
-  <div id="legendGroups"></div>
+<summary class="filter-summary">
+Network by County <span id="totalNetworksDesktop" class="county-count">0</span>
+</summary>
+<div id="legendGroups"></div>
 </details>
+
+
+<!-- Filters UI below -->
+<section class="filter-section" id="filtersUI" aria-label="Filter controls">
+<h3 class="filters-heading">Filter Networks</h3>
+
+
+<details class="filter-block" id="statusSection">
+<summary class="filter-summary">Status</summary>
+<div class="filter-group">
+<div id="statusChips" class="chip-select"></div>
+</div>
+</details>
+
+
+<details class="filter-block" id="leadSection">
+<summary class="filter-summary">Unify Lead</summary>
+<div class="filter-group">
+<div id="leadChips" class="chip-select"></div>
+</div>
+</details>
+
+
+<div class="filter-actions">
+<button id="applyFilters" type="button">Apply</button>
+<button id="clearFilters" class="clear" type="button">Clear</button>
+</div>
+</section>
 </aside>
 
 
