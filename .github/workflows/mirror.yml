@@ -1,54 +1,74 @@
-name: Mirror to Maps Repository
+name: Debug Mirror Setup
 on:
-  push:
-    branches: ['**']
-  create:
-  delete:
+  workflow_dispatch:  # Manual trigger only
 
 jobs:
-  mirror:
+  debug:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout source repository
+      - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
-          
-      - name: Configure git
+        
+      - name: Debug secrets and environment
         run: |
+          echo "=== Environment Info ==="
+          echo "Repository: ${{ github.repository }}"
+          echo "Actor: ${{ github.actor }}"
+          echo "Ref: ${{ github.ref }}"
+          
+          echo "=== Secret Status ==="
+          if [ -n "${{ secrets.MIRROR_TOKEN }}" ]; then
+            echo "✅ MIRROR_TOKEN is set (length: ${#MIRROR_TOKEN})"
+            echo "Token starts with: ${MIRROR_TOKEN:0:4}..."
+          else
+            echo "❌ MIRROR_TOKEN is not set"
+          fi
+          
+          if [ -n "${{ secrets.MIRROR_REPO }}" ]; then
+            echo "✅ MIRROR_REPO is set: ${{ secrets.MIRROR_REPO }}"
+          else
+            echo "❌ MIRROR_REPO is not set"
+          fi
+          
+      - name: Test GitHub API access
+        run: |
+          echo "=== Testing GitHub API ==="
+          curl -H "Authorization: token ${{ secrets.MIRROR_TOKEN }}" \
+               -s -o /tmp/user.json \
+               -w "HTTP Status: %{http_code}\n" \
+               https://api.github.com/user
+          
+          if [ -f /tmp/user.json ]; then
+            echo "API Response:"
+            cat /tmp/user.json | head -5
+          fi
+          
+      - name: Test destination repository access
+        run: |
+          echo "=== Testing destination repository access ==="
+          curl -H "Authorization: token ${{ secrets.MIRROR_TOKEN }}" \
+               -s -o /tmp/repo.json \
+               -w "HTTP Status: %{http_code}\n" \
+               "https://api.github.com/repos/${{ secrets.MIRROR_REPO }}"
+               
+          if [ -f /tmp/repo.json ]; then
+            echo "Repository API Response:"
+            cat /tmp/repo.json | head -10
+          fi
+          
+      - name: Test git operations
+        run: |
+          echo "=== Testing Git Operations ==="
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
           
-      - name: Debug information
+          echo "Attempting to add remote..."
+          git remote add test-mirror https://${{ secrets.MIRROR_TOKEN }}@github.com/${{ secrets.MIRROR_REPO }}.git
+          
+          echo "Attempting to fetch from remote..."
+          git ls-remote test-mirror || echo "ls-remote failed with exit code $?"
+          
+      - name: Show git remotes
         run: |
-          echo "Source repo: ${{ github.repository }}"
-          echo "Target repo: ${{ secrets.MIRROR_REPO }}"
-          echo "Current branch: ${{ github.ref_name }}"
-          
-      - name: Mirror to destination repository
-        env:
-          MIRROR_TOKEN: ${{ secrets.MIRROR_TOKEN }}
-          MIRROR_REPO: ${{ secrets.MIRROR_REPO }}
-        run: |
-          if [ -z "$MIRROR_TOKEN" ]; then
-            echo "Error: MIRROR_TOKEN secret not set"
-            exit 1
-          fi
-          if [ -z "$MIRROR_REPO" ]; then
-            echo "Error: MIRROR_REPO secret not set"
-            exit 1
-          fi
-          
-          git remote add mirror https://${MIRROR_TOKEN}@github.com/${MIRROR_REPO}.git
-          
-          # Try to push main/master branch first
-          if git show-ref --verify --quiet refs/heads/main; then
-            git push mirror main --force
-          elif git show-ref --verify --quiet refs/heads/master; then
-            git push mirror master --force
-          fi
-          
-          # Push all branches and tags
-          git push mirror --all --force || echo "Warning: Some branches failed to push"
-          git push mirror --tags --force || echo "Warning: Some tags failed to push"
+          echo "=== Current Git Remotes ==="
+          git remote -v
