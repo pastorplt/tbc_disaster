@@ -229,7 +229,7 @@
 
     <!-- Toggle button on all viewports -->
     <button id="legendToggle" class="legend-toggle" type="button" aria-expanded="false" aria-controls="legendPanel">
-      Legend
+      Filter
     </button>
 
     
@@ -397,12 +397,21 @@
     }
 
     function applyFilters(){
-      // 1) Show/hide polygons
+      // 1) Show/hide polygons and their labels
       networksGeoJson.eachLayer((layer) => {
         const props = layer.feature && layer.feature.properties || {};
         const vis = matchesFilters(props);
         layer.setStyle({ fillOpacity: vis ? 0.5 : 0.0, opacity: vis ? 1.0 : 0.0 });
         layer._path && (layer._path.style.pointerEvents = vis ? 'auto' : 'none');
+        
+        // Hide/show the tooltip (label) based on filter
+        if (layer.getTooltip()) {
+          if (vis) {
+            layer.getTooltip().setOpacity(1);
+          } else {
+            layer.getTooltip().setOpacity(0);
+          }
+        }
       });
       // 2) Rebuild legend list
       const filteredItems = allLegendItems.filter(it => matchesFilters(it.props));
@@ -437,9 +446,14 @@
     function renderGallery(photos){ if (!photos.length) return ''; const items = photos.map((p,i)=>'<a href="'+p+'" target="_blank" rel="noopener"><img src="'+p+'" alt="Photo '+(i+1)+'" loading="lazy" /></a>').join(''); return '<hr/><div class="gallery">'+items+'</div>'; }
     
 function churchesLine(rawName, statusArr = [], leadArr = []){
-  const chipsInline = (typeof chipsHtmlNoDots==='function') ? chipsHtmlNoDots([].concat(statusArr, leadArr)) : '';
+  const statusChips = statusArr.length ? chipsHtmlNoDots(statusArr) : '';
+  const leadChips = leadArr.length ? chipsHtmlNoDots(leadArr) : '';
+  
+  // Add space between status and lead chips if both exist
+  const allChips = [statusChips, leadChips].filter(Boolean).join(' ');
+  
   return '<div class="map-and-chips"><a href="/org_map?network='+encodeURIComponent(rawName)+'" target="_blank" rel="noopener">Map of Network Churches</a>'
-    + (chipsInline ? '<span class="chips-inline">'+chipsInline+'</span>' : '')
+    + (allChips ? '<span class="chips-inline">'+allChips+'</span>' : '')
     + '</div>';
 }
 
@@ -472,7 +486,31 @@ function infoCardHtml(props = {}){
     const sheetEl = document.getElementById('infoSheet');
     const sheetContentEl = document.getElementById('sheetContent');
 
-    
+    // Add function to open/close sheet
+    function openSheet(content) {
+      if (sheetContentEl) sheetContentEl.innerHTML = content;
+      if (sheetEl) {
+        sheetEl.classList.add('open');
+        sheetEl.setAttribute('aria-hidden', 'false');
+        lockScroll();
+      }
+    }
+
+    function closeSheet() {
+      if (sheetEl) {
+        sheetEl.classList.remove('open');
+        sheetEl.setAttribute('aria-hidden', 'true');
+        unlockScroll();
+      }
+    }
+
+    // Sheet close handlers
+    document.addEventListener('click', (e) => {
+      if (e.target.closest('[data-close="1"]')) {
+        closeSheet();
+      }
+    });
+
     
 function infoSheetHtml(props = {}){
   const rawName = (props.name && String(props.name).trim()) || 'Unnamed';
