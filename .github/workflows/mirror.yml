@@ -13,9 +13,42 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Configure git
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          
+      - name: Debug information
+        run: |
+          echo "Source repo: ${{ github.repository }}"
+          echo "Target repo: ${{ secrets.MIRROR_REPO }}"
+          echo "Current branch: ${{ github.ref_name }}"
           
       - name: Mirror to destination repository
+        env:
+          MIRROR_TOKEN: ${{ secrets.MIRROR_TOKEN }}
+          MIRROR_REPO: ${{ secrets.MIRROR_REPO }}
         run: |
-          git remote add mirror https://${{ secrets.MIRROR_TOKEN }}@github.com/${{ secrets.MIRROR_REPO }}.git
-          git push mirror --all --force
-          git push mirror --tags --force
+          if [ -z "$MIRROR_TOKEN" ]; then
+            echo "Error: MIRROR_TOKEN secret not set"
+            exit 1
+          fi
+          if [ -z "$MIRROR_REPO" ]; then
+            echo "Error: MIRROR_REPO secret not set"
+            exit 1
+          fi
+          
+          git remote add mirror https://${MIRROR_TOKEN}@github.com/${MIRROR_REPO}.git
+          
+          # Try to push main/master branch first
+          if git show-ref --verify --quiet refs/heads/main; then
+            git push mirror main --force
+          elif git show-ref --verify --quiet refs/heads/master; then
+            git push mirror master --force
+          fi
+          
+          # Push all branches and tags
+          git push mirror --all --force || echo "Warning: Some branches failed to push"
+          git push mirror --tags --force || echo "Warning: Some tags failed to push"
