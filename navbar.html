@@ -14,8 +14,8 @@
     </button>
 
     <ul class="nav-links" id="navMenu">
-      <li class="dropdown">
-        <button class="dropdown-toggle" type="button" aria-haspopup="true" aria-expanded="false">Maps â–¾</button>
+      <li class="dropdown" data-nav-item="maps">
+        <button class="dropdown-toggle" type="button" aria-haspopup="true" aria-expanded="false">Maps</button>
         <ul class="dropdown-content" role="menu" aria-label="Maps submenu">
           <li><a href="network_map.html" role="menuitem">Networks</a></li>
           <li><a href="org_map.html" role="menuitem">Organizations</a></li>
@@ -23,8 +23,8 @@
         </ul>
       </li>
 
-      <li class="dropdown">
-        <button class="dropdown-toggle" type="button" aria-haspopup="true" aria-expanded="false">View â–¾</button>
+      <li class="dropdown" data-nav-item="view">
+        <button class="dropdown-toggle" type="button" aria-haspopup="true" aria-expanded="false">View</button>
         <ul class="dropdown-content" role="menu" aria-label="View submenu">
           <li><a href="organizations.html" role="menuitem">Organizations</a></li>
           <li><a href="leaders.html" role="menuitem">Leaders</a></li>
@@ -32,7 +32,7 @@
         </ul>
       </li>
 
-      <li><a href="touchpoint.html">Touchpoint</a></li>
+      <li data-nav-item="touchpoint"><a href="touchpoint.html">Touchpoint</a></li>
     </ul>
   </div>
 </header>
@@ -64,6 +64,18 @@
     color: #fff; text-decoration: none; font-weight: 700;
     padding: 8px 12px; border-radius: 4px; display: block; opacity: .95;
     background: none; border: 0; cursor: pointer; font: inherit;
+  }
+  
+  /* CSS-based dropdown arrow */
+  .dropdown-toggle::after {
+    content: '';
+    display: inline-block;
+    margin-left: 6px;
+    vertical-align: middle;
+    border-top: 4px solid #fff;
+    border-right: 3px solid transparent;
+    border-left: 3px solid transparent;
+    opacity: 0.8;
   }
   .nav-links a:hover, .nav-links .dropdown-toggle:hover { background: var(--brand-darker); opacity: 1; }
   .nav-links a.active { background: var(--brand-darker); opacity: 1; }
@@ -120,6 +132,11 @@
     }
     .dropdown.open .dropdown-content { display: block; }
     .dropdown-content a { padding-left: 20px; }
+  }
+
+  /* Hidden navigation items */
+  [data-nav-item][style*="display: none"] {
+    display: none !important;
   }
 </style>
 
