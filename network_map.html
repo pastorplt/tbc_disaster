@@ -286,6 +286,9 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script>
+    // Detect domain and set configuration
+    const isMapsSubdomain = window.location.hostname === 'maps.tbc.city';
+    
     // Map with custom zoom control placement (avoid legend overlap)
     const map = L.map('map', { center: [37.8, -122.3], zoom: 9, preferCanvas: true, zoomControl: false });
     L.control.zoom({ position: 'bottomright' }).addTo(map);
@@ -432,6 +435,14 @@
 
     // Hook up buttons after DOM ready
     document.addEventListener('DOMContentLoaded', () => {
+      // Hide filter sections on maps subdomain
+      if (isMapsSubdomain) {
+        const statusSection = document.getElementById('statusSection');
+        const leadSection = document.getElementById('leadSection');
+        if (statusSection) statusSection.style.display = 'none';
+        if (leadSection) leadSection.style.display = 'none';
+      }
+      
       const applyBtn = document.getElementById('applyFilters');
       const clearBtn = document.getElementById('clearFilters');
       if (applyBtn) applyBtn.addEventListener('click', () => { applyFilters(); /* Collapse county section for compactness */ try{ document.getElementById('countySection').open = true; }catch{} });
@@ -446,6 +457,11 @@
     function renderGallery(photos){ if (!photos.length) return ''; const items = photos.map((p,i)=>'<a href="'+p+'" target="_blank" rel="noopener"><img src="'+p+'" alt="Photo '+(i+1)+'" loading="lazy" /></a>').join(''); return '<hr/><div class="gallery">'+items+'</div>'; }
     
 function churchesLine(rawName, statusArr = [], leadArr = []){
+  // Hide chips on maps subdomain
+  if (isMapsSubdomain) {
+    return '<div class="map-and-chips"><a href="/org_map?network='+encodeURIComponent(rawName)+'" target="_blank" rel="noopener">Map of Network Churches</a></div>';
+  }
+  
   const statusChips = statusArr.length ? chipsHtmlNoDots(statusArr) : '';
   const leadChips = leadArr.length ? chipsHtmlNoDots(leadArr) : '';
   
