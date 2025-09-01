@@ -6,15 +6,18 @@ jobs:
   mirror:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout with token
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          persist-credentials: false
+          token: YOUR_NEW_WORKING_TOKEN
           
-      - name: Mirror to destination repository
+      - name: Configure git
         run: |
           git config --global user.name "GitHub Mirror Bot"
           git config --global user.email "actions@github.com"
-          git remote add mirror https://x-access-token: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@github.com/pastorplt/tbc_public_maps.git
-          git push mirror --all --force
-          git push mirror --tags --force
+          
+      - name: Add remote and push
+        run: |
+          git remote add mirror https://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@github.com/pastorplt/tbc_public_maps.git
+          git push mirror main --force
