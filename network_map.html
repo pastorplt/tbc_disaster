@@ -545,9 +545,10 @@
 
     // Sheet close handlers
     document.addEventListener('click', (e) => {
-      if (e.target.closest('[data-close="1"])) {
+      if (e.target.closest('[data-close="1"]')) {
         closeSheet();
       }
+    });
 
     function infoSheetHtml(props = {}){
       const rawName = (props.name && String(props.name).trim()) || 'Unnamed';
