@@ -786,6 +786,38 @@ Network by County <span id="totalNetworksDesktop" class="county-count">0</span>
     }
     map.on('zoomend', updateLabelSizes);
     map.whenReady(updateLabelSizes);
+
+    // === Random Network Prayer Support ===
+    map.whenReady(() => {
+      const params = new URLSearchParams(location.search);
+      if (!params.has('random')) return;
+
+      // Wait until networks are fully loaded
+      if (!networksGeoJson) return;
+
+      const allLayers = [];
+      networksGeoJson.eachLayer(l => allLayers.push(l));
+      if (!allLayers.length) return;
+
+      const pick = allLayers[Math.floor(Math.random() * allLayers.length)];
+      const bounds = pick.getBounds();
+
+      if (bounds && bounds.isValid()) {
+        map.fitBounds(bounds.pad(0.15), { animate: true });
+        map.once('moveend', () => {
+          const props = pick.feature && pick.feature.properties || {};
+          if (isMobile()) {
+            openSheet(infoSheetHtml(props));
+          } else {
+            pick.bindPopup(infoCardHtml(props), { maxWidth: 480, closeOnClick: false, autoClose: true });
+            pick.openPopup(bounds.getCenter());
+            if (pick.bringToFront) pick.bringToFront();
+          }
+        });
+      }
+    });
+
+    
     window.addEventListener('resize', updateLabelSizes);
 
     // Keep popup interactions from bubbling; desktop uses Leaflet popup only
