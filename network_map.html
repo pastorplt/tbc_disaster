@@ -393,7 +393,7 @@ Network by County <span id="totalNetworksDesktop" class="county-count">0</span>
           const checked = set.has(val) ? ' checked' : '';
           el.insertAdjacentHTML('beforeend',
             '<span class="chip-option">'
-            + '<input type="checkbox" id="'+id+'" value="'+escapeHtml(val)+'"'+checked+'/>'
+            + '<input type="checkbox" id="'+id+'" value="'+escapeHtml(val)+'"'+checked+' />'
             + '<label class="chip'+(dark?' dark':'')+'" for="'+id+'" style="background:'+color+';">'+escapeHtml(val)+'</label>'
             + '</span>'
           );
@@ -425,11 +425,7 @@ Network by County <span id="totalNetworksDesktop" class="county-count">0</span>
         
         // Hide/show the tooltip (label) based on filter
         if (layer.getTooltip()) {
-          if (vis) {
-            layer.getTooltip().setOpacity(1);
-          } else {
-            layer.getTooltip().setOpacity(0);
-          }
+          layer.getTooltip().setOpacity(vis ? 1 : 0);
         }
       });
       // 2) Rebuild legend list
@@ -463,20 +459,19 @@ Network by County <span id="totalNetworksDesktop" class="county-count">0</span>
       
       const applyBtn = document.getElementById('applyFilters');
       const clearBtn = document.getElementById('clearFilters');
-      if (applyBtn) applyBtn.addEventListener('click', () => { applyFilters(); /* Collapse county section for compactness */ try{ document.getElementById('countySection').open = true; }catch{} });
+      if (applyBtn) applyBtn.addEventListener('click', () => { applyFilters(); try{ document.getElementById('countySection').open = true; }catch{} });
       if (clearBtn) clearBtn.addEventListener('click', () => { clearFilters(); });
     });
 
     function highlight(e){ e.target.setStyle({ weight: 3, color:'#000', fillOpacity: 0.7 }); }
     function resetHighlight(e){ networksGeoJson && networksGeoJson.resetStyle(e.target); }
-    function cleanedName(name){ if (!name || typeof name !== 'string') return 'Unnamed'; return name.replace(/\bnetworks?\b/gi,'').replace(/\s+/g,' ').trim() || 'Unnamed'; }
-    function multilineName(name){ return cleanedName(name).split(/\s+/).filter(Boolean).join('<br>'); }
+    function cleanedName(name){ if (!name || typeof name !== 'string') return 'Unnamed'; return name.replace(/\\bnetworks?\\b/gi,'').replace(/\\s+/g,' ').trim() || 'Unnamed'; }
+    function multilineName(name){ return cleanedName(name).split(/\\s+/).filter(Boolean).join('<br>'); }
     function allPhotos(props = []){ return [props.photo1,props.photo2,props.photo3,props.photo4,props.photo5,props.photo6].filter(u => typeof u === 'string' && u.trim()); }
-    function renderGallery(photos){ if (!photos.length) return ''; const items = photos.map((p,i)=>'<a href="'+p+'" target="_blank" rel="noopener"><img src="'+p+'" alt="Photo '+(i+1)+'" loading="lazy" /></a>').join(''); return '<hr/><div class="gallery">'+items+'</div>'; }
+    function renderGallery(photos){ if (!photos.length) return ''; const items = photos.map((p,i)=>'<a href=\"'+p+'\" target=\"_blank\" rel=\"noopener\"><img src=\"'+p+'\" alt=\"Photo '+(i+1)+'\" loading=\"lazy\" /></a>').join(''); return '<hr/><div class=\"gallery\">'+items+'</div>'; }
     
-    // === NEW: conditional link rendering based on church count ===
+    // === Conditional link rendering based on church count ===
     function getChurchCount(props={}){
-      // Try several likely keys; default to 0 if missing/NaN
       const raw = props['number of churches'] ?? props.number_of_churches ?? props.numberOfChurches ?? props.church_count ?? props.churches ?? 0;
       const n = Number(raw);
       return Number.isFinite(n) && n > 0 ? n : 0;
@@ -486,10 +481,9 @@ Network by County <span id="totalNetworksDesktop" class="county-count">0</span>
       const count = getChurchCount(props);
       const showLink = count > 0;
 
-      // Hide chips on maps subdomain
       if (isMapsSubdomain) {
         return showLink
-          ? '<div class="map-and-chips"><a href="/org_map?network='+encodeURIComponent(rawName)+'" target="_blank" rel="noopener">Map of Network Churches</a></div>'
+          ? '<div class=\"map-and-chips\"><a href=\"/org_map?network='+encodeURIComponent(rawName)+'\" target=\"_blank\" rel=\"noopener\">Map of Network Churches</a></div>'
           : '';
       }
       
@@ -498,29 +492,27 @@ Network by County <span id="totalNetworksDesktop" class="county-count">0</span>
       const allChips = [statusChips, leadChips].filter(Boolean).join(' ');
 
       const linkHtml = showLink
-        ? '<a href="/org_map?network='+encodeURIComponent(rawName)+'" target="_blank" rel="noopener">Map of Network Churches</a>'
+        ? '<a href=\"/org_map?network='+encodeURIComponent(rawName)+'\" target=\"_blank\" rel=\"noopener\">Map of Network Churches</a>'
         : '';
 
-      // If link is hidden but there are chips, still render the container so chips show
       if (!linkHtml && allChips){
-        return '<div class="map-and-chips"><span class="chips-inline">'+allChips+'</span></div>';
+        return '<div class=\"map-and-chips\"><span class=\"chips-inline\">'+allChips+'</span></div>';
       }
 
-      // Normal case: link + optional chips (with a space between status & lead chips)
-      return '<div class="map-and-chips">'+linkHtml
-        + (allChips ? ' <span class="chips-inline">'+allChips+'</span>' : '')
+      return '<div class=\"map-and-chips\">'+linkHtml
+        + (allChips ? ' <span class=\"chips-inline\">'+allChips+'</span>' : '')
         + '</div>';
     }
 
     function infoCardHtml(props = {}){
       const rawName = (props.name && String(props.name).trim()) || 'Unnamed';
-      const emailLine = props.contact_email ? '<div><span class="label">Email:</span> <a href="mailto:'+props.contact_email+'">'+props.contact_email+'</a></div>' : '';
+      const emailLine = props.contact_email ? '<div><span class=\"label\">Email:</span> <a href=\"mailto:'+props.contact_email+'\">'+props.contact_email+'</a></div>' : '';
       const statusArr = toArray(props.status);
       const leadArr   = toArray(props.unify_lead);
       const photos = allPhotos(props);
-      return '<div class="tip">'
-        + '<div class="tip-name">'+rawName+'</div>'
-        + '<div><span class="label">Leaders:</span> '+(props.leaders ?? '—')+'</div>'
+      return '<div class=\"tip\">'
+        + '<div class=\"tip-name\">'+rawName+'</div>'
+        + '<div><span class=\"label\">Leaders:</span> '+(props.leaders ?? '—')+'</div>'
         + emailLine
         + churchesLine(rawName, statusArr, leadArr, props)
         + renderGallery(photos)
@@ -541,7 +533,6 @@ Network by County <span id="totalNetworksDesktop" class="county-count">0</span>
     const sheetEl = document.getElementById('infoSheet');
     const sheetContentEl = document.getElementById('sheetContent');
 
-    // Add function to open/close sheet
     function openSheet(content) {
       if (sheetContentEl) sheetContentEl.innerHTML = content;
       if (sheetEl) {
@@ -559,22 +550,21 @@ Network by County <span id="totalNetworksDesktop" class="county-count">0</span>
       }
     }
 
-    // Sheet close handlers
     document.addEventListener('click', (e) => {
-      if (e.target.closest('[data-close="1"]')) {
+      if (e.target.closest('[data-close=\"1\"]')) {
         closeSheet();
       }
     });
 
     function infoSheetHtml(props = {}){
       const rawName = (props.name && String(props.name).trim()) || 'Unnamed';
-      const emailLine = props.contact_email ? '<div><span class="label">Email:</span> <a href="mailto:'+props.contact_email+'">'+props.contact_email+'</a></div>' : '';
+      const emailLine = props.contact_email ? '<div><span class=\"label\">Email:</span> <a href=\"mailto:'+props.contact_email+'\">'+props.contact_email+'</a></div>' : '';
       const statusArr = toArray(props.status);
       const leadArr   = toArray(props.unify_lead);
       const photos = allPhotos(props);
-      return '<div class="tip">'
-        + '<div class="tip-name" id="sheetTitle">'+rawName+'</div>'
-        + '<div><span class="label">Leaders:</span> '+(props.leaders ?? '—')+'</div>'
+      return '<div class=\"tip\">'
+        + '<div class=\"tip-name\" id=\"sheetTitle\">'+rawName+'</div>'
+        + '<div><span class=\"label\">Leaders:</span> '+(props.leaders ?? '—')+'</div>'
         + emailLine
         + churchesLine(rawName, statusArr, leadArr, props)
         + renderGallery(photos)
@@ -582,7 +572,6 @@ Network by County <span id="totalNetworksDesktop" class="county-count">0</span>
     }
 
     function isMobile() { return window.matchMedia('(max-width: 767.98px)').matches; }
-
     function isTouch() { return window.matchMedia('(pointer: coarse)').matches; }
 
     L.DomEvent.disableScrollPropagation(legendPanel);
@@ -622,7 +611,7 @@ Network by County <span id="totalNetworksDesktop" class="county-count">0</span>
       if (legendPopupEl) legendPopupEl.remove();
       const el = document.createElement('div');
       el.className = 'legend-popup';
-      el.innerHTML = html; // no close button
+      el.innerHTML = html;
       legendPanel.appendChild(el);
 
       const panelRect = legendPanel.getBoundingClientRect();
@@ -635,34 +624,59 @@ Network by County <span id="totalNetworksDesktop" class="county-count">0</span>
       if (isMobile()) openLegend();
     }
 
-    // ===== Random open helper (called after networks load) =====
-    function openRandomNetwork() {
-      const params = new URLSearchParams(location.search);
-      if (!params.has('random') || !window.networksGeoJson) return;
+    // ========== Robust random-open infrastructure ==========
+    let networksGeoJson;                 // will hold the GeoJSON layer
+    const networksReadyQueue = [];       // callbacks to run after networks are ready
+    let randomOpened = false;            // guard to prevent double-opening
 
+    function onNetworksReady(cb){
+      if (networksGeoJson) cb();
+      else networksReadyQueue.push(cb);
+    }
+
+    function hasRandomParam(){
+      const params = new URLSearchParams(location.search);
+      return params.has('random');
+    }
+
+    function openRandomNetworkOnce(){
+      if (randomOpened) return;
+      if (!networksGeoJson) return;
       const allLayers = [];
       networksGeoJson.eachLayer(l => allLayers.push(l));
+      console.log('[Random] layers:', allLayers.length);
       if (!allLayers.length) return;
+
+      randomOpened = true;
 
       const pick = allLayers[Math.floor(Math.random() * allLayers.length)];
       const bounds = pick.getBounds && pick.getBounds();
-      if (!bounds || !bounds.isValid || !bounds.isValid()) return;
+      const props = (pick.feature && pick.feature.properties) || {};
+      console.log('[Random] picked:', props && props.name);
 
-      map.fitBounds(bounds.pad(0.15), { animate: true });
-      map.once('moveend', () => {
-        const props = (pick.feature && pick.feature.properties) || {};
-        if (isMobile()) {
-          openSheet(infoSheetHtml(props));
-        } else {
-          pick.bindPopup(infoCardHtml(props), { maxWidth: 480, closeOnClick: false, autoClose: true });
-          pick.openPopup(bounds.getCenter());
-          if (pick.bringToFront) pick.bringToFront();
-        }
-      });
+      if (bounds && bounds.isValid && bounds.isValid()) {
+        let opened = false;
+        const openPopupNow = () => {
+          if (opened) return;
+          opened = true;
+          if (isMobile()) {
+            openSheet(infoSheetHtml(props));
+          } else {
+            pick.bindPopup(infoCardHtml(props), { maxWidth: 480, closeOnClick: false, autoClose: true });
+            pick.openPopup(bounds.getCenter());
+            if (pick.bringToFront) pick.bringToFront();
+          }
+        };
+
+        map.fitBounds(bounds.pad(0.15), { animate: true });
+        map.once('moveend', openPopupNow);
+        // Fallback in case moveend doesn't fire for any reason
+        setTimeout(openPopupNow, 800);
+      }
     }
+    // =======================================================
 
     // Load Networks
-    let networksGeoJson;
     fetch('https://api.tbc.city/networks/polygons.geojson', { cache: 'no-cache' })
       .then(res => res.json())
       .then(data => {
@@ -700,7 +714,6 @@ Network by County <span id="totalNetworksDesktop" class="county-count">0</span>
             const item = { county, name: nameClean, color: colorForFeature(feature), props, layer };
             allLegendItems.push(item);
 
-            // Collect filter values
             toArray(props.status).forEach(v => allStatusValues.add(v));
             toArray(props.unify_lead).forEach(v => allLeadValues.add(v));
           }
@@ -711,12 +724,14 @@ Network by County <span id="totalNetworksDesktop" class="county-count">0</span>
 
         buildFilterChips();
         applyFilters();
-        // Initial label sizing after layers are added
         updateLabelSizes();
 
-        // >>> Open a random network if requested
-        openRandomNetwork();
-      });
+        // flush queued callbacks
+        while (networksReadyQueue.length) {
+          try { networksReadyQueue.shift()(); } catch(e) { console.error(e); }
+        }
+      })
+      .catch(err => console.error('Failed to load polygons.geojson:', err));
 
     function buildCountyLegend(groups) {
       const counties = Array.from(groups.keys()).sort((a, b) => {
@@ -751,7 +766,6 @@ Network by County <span id="totalNetworksDesktop" class="county-count">0</span>
           const label = document.createElement('span'); label.className = 'legend-name'; label.innerHTML = item.name;
           li.appendChild(swatch); li.appendChild(label); ul.appendChild(li);
 
-          // Click -> pan/zoom/highlight, then open UI appropriate to device
           li.addEventListener('click', (e) => {
             e.stopPropagation();
             try {
@@ -802,28 +816,34 @@ Network by County <span id="totalNetworksDesktop" class="county-count">0</span>
     function updateLabelSizes() {
       const z = map.getZoom();
       const mobile = isMobile();
-      // Start smaller on both, scale with zoom; gentle ramp on desktop
       const base = mobile ? 10 : 10.5;
-      const slope = mobile ? 1.0 : 1.1; // px per zoom step above 8
+      const slope = mobile ? 1.0 : 1.1;
       let size = base + (z - 8) * slope;
       const min = mobile ? 9 : 10;
       const max = 22;
       if (size < min) size = min;
       if (size > max) size = max;
-      // Single DOM write using CSS variable
       document.documentElement.style.setProperty('--label-size', size.toFixed(1) + 'px');
     }
     map.on('zoomend', updateLabelSizes);
     map.whenReady(updateLabelSizes);
+
+    // ===== Kick off random-open if requested =====
+    if (hasRandomParam()) {
+      console.log('[Random] param detected');
+      onNetworksReady(openRandomNetworkOnce);
+      // extra defense in case networks load *very* quickly or late
+      setTimeout(() => onNetworksReady(openRandomNetworkOnce), 100);
+      setTimeout(() => onNetworksReady(openRandomNetworkOnce), 600);
+    }
+
     window.addEventListener('resize', updateLabelSizes);
 
-    // Keep popup interactions from bubbling; desktop uses Leaflet popup only
     map.on('popupopen', (e) => {
       const el = e.popup && e.popup.getElement && e.popup.getElement();
       if (!el) return;
       try { L.DomEvent.disableClickPropagation(el); L.DomEvent.disableScrollPropagation(el); } catch {}
     });
-
   </script>
 </body>
 </html>
