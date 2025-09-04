@@ -1,4 +1,4 @@
-// include-nav.js
+// include-nav.js (safe cross-browser version)
 
 // ========== CONFIGURATION ==========
 // Define which navigation items to show for each domain
@@ -30,13 +30,20 @@ const NAVBAR_CONFIG = {
   var hostname = window.location.hostname;
   var config = NAVBAR_CONFIG[hostname] || NAVBAR_CONFIG['default'];
 
-  fetch('navbar.html', { cache: 'no-cache' })
+  // Add a version query to defeat CDN caches when updating
+  var VERSION = '2025-09-04-2';
+
+  fetch('navbar.html?v=' + encodeURIComponent(VERSION), { cache: 'no-cache' })
     .then(function(r){ return r.text(); })
     .then(function(html){
       mount.innerHTML = html;
 
-      // Apply domain-specific configuration
-      applyNavbarConfig(mount, config);
+      // Apply domain-specific configuration safely
+      try {
+        applyNavbarConfig(mount, config);
+      } catch (e) {
+        console.error('applyNavbarConfig error:', e);
+      }
 
       // Run any <script> tags that might be inside navbar.html (safety for future)
       var scripts = mount.querySelectorAll('script');
@@ -73,27 +80,23 @@ const NAVBAR_CONFIG = {
         }
       }
 
-      // If we're on a Maps subpage, also highlight the "Maps ▾" parent
+      // If we're on a Maps subpage, also highlight the "Maps" parent
       var mapsFiles = ['network_map.html', 'org_map.html', 'disaster_data.html'];
       if (mapsFiles.indexOf(file) !== -1) {
-        var mapsDropdowns = mount.querySelectorAll('.dropdown-toggle');
-        for (var i = 0; i < mapsDropdowns.length; i++) {
-          if (mapsDropdowns[i].textContent.indexOf('Maps') !== -1) {
-            mapsDropdowns[i].classList.add('active');
-            break;
-          }
+        var mapsDropdown = findDropdownByLabel(mount, 'Maps');
+        if (mapsDropdown) {
+          var toggle = mapsDropdown.querySelector('.dropdown-toggle');
+          if (toggle) toggle.classList.add('active');
         }
       }
 
-      // If we're on a View subpage, also highlight the "View ▾" parent
+      // If we're on a View subpage, also highlight the "View" parent
       var viewFiles = ['organizations.html','leaders.html','networks.html'];
       if (viewFiles.indexOf(file) !== -1) {
-        var viewDropdowns = mount.querySelectorAll('.dropdown-toggle');
-        for (var i = 0; i < viewDropdowns.length; i++) {
-          if (viewDropdowns[i].textContent.indexOf('View') !== -1) {
-            viewDropdowns[i].classList.add('active');
-            break;
-          }
+        var viewDropdown = findDropdownByLabel(mount, 'View');
+        if (viewDropdown) {
+          var toggle2 = viewDropdown.querySelector('.dropdown-toggle');
+          if (toggle2) toggle2.classList.add('active');
         }
       }
 
@@ -104,51 +107,42 @@ const NAVBAR_CONFIG = {
       mount.innerHTML = '<div style="background:#bf3426;color:#fff;padding:8px 12px;">Navigation failed to load</div>';
     });
 
+  // ------ Helpers ------
+  function findDropdownByLabel(root, labelText) {
+    // Searches for .dropdown whose .dropdown-toggle contains labelText
+    var dropdowns = root.querySelectorAll('.dropdown');
+    for (var i = 0; i < dropdowns.length; i++) {
+      var toggle = dropdowns[i].querySelector('.dropdown-toggle');
+      if (toggle && typeof toggle.textContent === 'string' && toggle.textContent.indexOf(labelText) !== -1) {
+        return dropdowns[i];
+      }
+    }
+    return null;
+  }
+
+  function hideElement(el) {
+    if (el && el.style) el.style.display = 'none';
+  }
+
   // Function to apply domain-specific navbar configuration
   function applyNavbarConfig(mount, config) {
     // Hide/show Maps dropdown
     if (!config.showMaps) {
-      var mapsDropdown = mount.querySelector('.dropdown:has(.dropdown-toggle:contains("Maps"))');
-      if (!mapsDropdown) {
-        // Fallback for browsers that don't support :has() or :contains()
-        var dropdowns = mount.querySelectorAll('.dropdown');
-        for (var i = 0; i < dropdowns.length; i++) {
-          var toggle = dropdowns[i].querySelector('.dropdown-toggle');
-          if (toggle && toggle.textContent.indexOf('Maps') !== -1) {
-            mapsDropdown = dropdowns[i];
-            break;
-          }
-        }
-      }
-      if (mapsDropdown) {
-        mapsDropdown.style.display = 'none';
-      }
+      var mapsDropdown = findDropdownByLabel(mount, 'Maps');
+      hideElement(mapsDropdown);
     }
 
     // Hide/show View dropdown
     if (!config.showView) {
-      var viewDropdown = mount.querySelector('.dropdown:has(.dropdown-toggle:contains("View"))');
-      if (!viewDropdown) {
-        // Fallback for browsers that don't support :has() or :contains()
-        var dropdowns = mount.querySelectorAll('.dropdown');
-        for (var i = 0; i < dropdowns.length; i++) {
-          var toggle = dropdowns[i].querySelector('.dropdown-toggle');
-          if (toggle && toggle.textContent.indexOf('View') !== -1) {
-            viewDropdown = dropdowns[i];
-            break;
-          }
-        }
-      }
-      if (viewDropdown) {
-        viewDropdown.style.display = 'none';
-      }
+      var viewDropdown = findDropdownByLabel(mount, 'View');
+      hideElement(viewDropdown);
     }
 
     // Hide/show Touchpoint link
     if (!config.showTouchpoint) {
       var touchpointLink = mount.querySelector('a[href="touchpoint.html"]');
-      if (touchpointLink && touchpointLink.parentNode.tagName === 'LI') {
-        touchpointLink.parentNode.style.display = 'none';
+      if (touchpointLink && touchpointLink.parentNode && touchpointLink.parentNode.tagName === 'LI') {
+        hideElement(touchpointLink.parentNode);
       }
     }
   }
