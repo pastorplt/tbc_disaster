@@ -22,6 +22,16 @@ jobs:
   mirror:
     runs-on: ubuntu-latest
     steps:
+      - name: Set up SSH for pushing to target
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.MIRROR_SSH_PRIVATE_KEY }}
+
+      - name: Trust github.com host key
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+
       - name: Mirror-clone the source (bare)
         run: |
           set -euxo pipefail
@@ -38,11 +48,9 @@ jobs:
           fi
 
       - name: Push everything to target (branches, tags, deletions)
-        env:
-          MIRROR_URL: https://x-access-token:${{ secrets.MIRROR_PUSH_TOKEN }}@github.com/pastorplt/tbc_public_maps.git
         run: |
           set -euxo pipefail
-          git -C mirror.git remote add mirror "$MIRROR_URL"
+          git -C mirror.git remote add mirror "git@github.com:pastorplt/tbc_public_maps.git"
           git -C mirror.git push --mirror mirror
           if command -v git-lfs >/dev/null 2>&1; then
             git -C mirror.git lfs push --all mirror || true
