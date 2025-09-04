@@ -122,8 +122,10 @@
       <a class="btn" href="network_map.html">View TBC Networks</a>
       <a class="btn secondary" href="touchpoint.html" data-domain-element="touchpoint-btn">Open Touchpoint</a>
       <!-- New -->
-      <a class="btn" href="network_map.html?random=1" title="Open a random network for prayer">Network Prayer</a>
-    </div>
+      <a class="btn" href="network_map.html?random=1" title="Open a random network for prayer">Pray for a Network</a>
+      <!-- New -->
+  <a class="btn secondary" href="/network_prayer_request.html" data-domain-element="prayer-request-btn">Submit Network Prayer Request</a>
+</div>
   </main>
 
   <script>
@@ -133,18 +135,21 @@
       'app.tbc.city': {
         showTeamAppTitle: true,
         showExplorePhrase: true,
-        showTouchpointBtn: true
+        showTouchpointBtn: true,
+        showPrayerRequestBtn: true
       },
       'maps.tbc.city': {
         showTeamAppTitle: false,
         showExplorePhrase: false,
-        showTouchpointBtn: false
+        showTouchpointBtn: false,
+        showPrayerRequestBtn: true
       },
       // Default configuration for other domains (including localhost, staging, etc.)
       'default': {
         showTeamAppTitle: true,
         showExplorePhrase: true,
-        showTouchpointBtn: true
+        showTouchpointBtn: true,
+        showPrayerRequestBtn: false
       }
     };
     // ===================================
@@ -176,6 +181,12 @@
         if (touchpointBtn) {
           touchpointBtn.style.display = 'none';
         }
+      }
+
+      // Hide/show Prayer Request button
+      if (!config.showPrayerRequestBtn) {
+        var prBtn = document.querySelector('[data-domain-element="prayer-request-btn"]');
+        if (prBtn) prBtn.style.display = 'none';
       }
     })();
   </script>
