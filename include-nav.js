@@ -59,7 +59,8 @@ const NAVBAR_CONFIG = {
         'touchpoint.html': 'a[href="touchpoint.html"]',
         'organizations.html': 'a[href="organizations.html"]',
         'leaders.html': 'a[href="leaders.html"]',
-        'networks.html': 'a[href="networks.html"]'
+        'networks.html': 'a[href="networks.html"]',
+        'network_prayer_request.html': 'a[href="/network_prayer_request.html"]'
       };
 
       // Highlight exact match
