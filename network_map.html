@@ -70,15 +70,11 @@
 
     /* Darker styling for Networks by County */
     #countySection.filter-block {
-    background: #e2e8f0; /* slightly darker shade */
-    border-color: #cbd5e1;
+      background: #e2e8f0; /* slightly darker shade */
+      border-color: #cbd5e1;
     }
-    #countySection .filter-summary {
-    background: #e5e7eb;
-    }
-    #countySection[open] .filter-summary {
-    background: #dbeafe;
-    }
+    #countySection .filter-summary { background: #e5e7eb; }
+    #countySection[open] .filter-summary { background: #dbeafe; }
 
     .county-group { margin-bottom: 6px; border-radius: 8px; }
     .county-group summary {
@@ -149,11 +145,17 @@
     .tip .label { color:#666; }
     .tip-name { font-size: 15px; font-weight: 600; margin-bottom: 2px; color: #111; }
 
+    /* WRAPPED polygon labels */
     .poly-label {
       background: transparent; border: 0; box-shadow: none;
       color: #1f2937;
-      font: 12px/1.2 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; /* desktop default */
-      text-align: center; white-space: nowrap; line-height: 1.15;
+      font: 12px/1.2 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      text-align: center;
+      /* allow multi-line wrapping */
+      white-space: normal;
+      max-width: 140px;
+      overflow-wrap: anywhere;
+      line-height: 1.15;
       text-shadow: 0 1px 2px rgba(255,255,255,.85), 0 0 2px rgba(255,255,255,.9);
       pointer-events: none;
       font-size: var(--label-size, 12px);
@@ -465,10 +467,10 @@ Network by County <span id="totalNetworksDesktop" class="county-count">0</span>
 
     function highlight(e){ e.target.setStyle({ weight: 3, color:'#000', fillOpacity: 0.7 }); }
     function resetHighlight(e){ networksGeoJson && networksGeoJson.resetStyle(e.target); }
-    function cleanedName(name){ if (!name || typeof name !== 'string') return 'Unnamed'; return name.replace(/\\bnetworks?\\b/gi,'').replace(/\\s+/g,' ').trim() || 'Unnamed'; }
-    function multilineName(name){ return cleanedName(name).split(/\\s+/).filter(Boolean).join('<br>'); }
+    function cleanedName(name){ if (!name || typeof name !== 'string') return 'Unnamed'; return name.replace(/\bnetworks?\b/gi,'').replace(/\s+/g,' ').trim() || 'Unnamed'; }
+    function multilineName(name){ return cleanedName(name).split(/\s+/).filter(Boolean).join('<br>'); }
     function allPhotos(props = []){ return [props.photo1,props.photo2,props.photo3,props.photo4,props.photo5,props.photo6].filter(u => typeof u === 'string' && u.trim()); }
-    function renderGallery(photos){ if (!photos.length) return ''; const items = photos.map((p,i)=>'<a href=\"'+p+'\" target=\"_blank\" rel=\"noopener\"><img src=\"'+p+'\" alt=\"Photo '+(i+1)+'\" loading=\"lazy\" /></a>').join(''); return '<hr/><div class=\"gallery\">'+items+'</div>'; }
+    function renderGallery(photos){ if (!photos.length) return ''; const items = photos.map((p,i)=>'<a href="'+p+'" target="_blank" rel="noopener"><img src="'+p+'" alt="Photo '+(i+1)+'" loading="lazy" /></a>').join(''); return '<hr/><div class="gallery">'+items+'</div>'; }
     
     // === Conditional link rendering based on church count ===
     function getChurchCount(props={}){
@@ -483,7 +485,7 @@ Network by County <span id="totalNetworksDesktop" class="county-count">0</span>
 
       if (isMapsSubdomain) {
         return showLink
-          ? '<div class=\"map-and-chips\"><a href=\"/org_map?network='+encodeURIComponent(rawName)+'\" target=\"_blank\" rel=\"noopener\">Map of Network Churches</a></div>'
+          ? '<div class="map-and-chips"><a href="/org_map?network='+encodeURIComponent(rawName)+'" target="_blank" rel="noopener">Map of Network Churches</a></div>'
           : '';
       }
       
@@ -492,28 +494,35 @@ Network by County <span id="totalNetworksDesktop" class="county-count">0</span>
       const allChips = [statusChips, leadChips].filter(Boolean).join(' ');
 
       const linkHtml = showLink
-        ? '<a href=\"/org_map?network='+encodeURIComponent(rawName)+'\" target=\"_blank\" rel=\"noopener\">Map of Network Churches</a>'
+        ? '<a href="/org_map?network='+encodeURIComponent(rawName)+'" target="_blank" rel="noopener">Map of Network Churches</a>'
         : '';
 
       if (!linkHtml && allChips){
-        return '<div class=\"map-and-chips\"><span class=\"chips-inline\">'+allChips+'</span></div>';
+        return '<div class="map-and-chips"><span class="chips-inline">'+allChips+'</span></div>';
       }
 
-      return '<div class=\"map-and-chips\">'+linkHtml
-        + (allChips ? ' <span class=\"chips-inline\">'+allChips+'</span>' : '')
+      return '<div class="map-and-chips">'+linkHtml
+        + (allChips ? ' <span class="chips-inline">'+allChips+'</span>' : '')
         + '</div>';
+    }
+
+    // NEW: Prayer Request line
+    function prayerLine(v){
+      const s = (v == null ? '' : String(v)).trim();
+      return s ? '<div><span class="label">Prayer Request:</span> ' + escapeHtml(s) + '</div>' : '';
     }
 
     function infoCardHtml(props = {}){
       const rawName = (props.name && String(props.name).trim()) || 'Unnamed';
-      const emailLine = props.contact_email ? '<div><span class=\"label\">Email:</span> <a href=\"mailto:'+props.contact_email+'\">'+props.contact_email+'</a></div>' : '';
+      const emailLine = props.contact_email ? '<div><span class="label">Email:</span> <a href="mailto:'+props.contact_email+'">'+props.contact_email+'</a></div>' : '';
       const statusArr = toArray(props.status);
       const leadArr   = toArray(props.unify_lead);
       const photos = allPhotos(props);
-      return '<div class=\"tip\">'
-        + '<div class=\"tip-name\">'+rawName+'</div>'
-        + '<div><span class=\"label\">Leaders:</span> '+(props.leaders ?? '—')+'</div>'
+      return '<div class="tip">'
+        + '<div class="tip-name">'+rawName+'</div>'
+        + '<div><span class="label">Leaders:</span> '+(props.leaders ?? '—')+'</div>'
         + emailLine
+        + prayerLine(props.latest_prayer_request)          // added
         + churchesLine(rawName, statusArr, leadArr, props)
         + renderGallery(photos)
         + '</div>';
@@ -551,21 +560,22 @@ Network by County <span id="totalNetworksDesktop" class="county-count">0</span>
     }
 
     document.addEventListener('click', (e) => {
-      if (e.target.closest('[data-close=\"1\"]')) {
+      if (e.target.closest('[data-close="1"]')) {
         closeSheet();
       }
     });
 
     function infoSheetHtml(props = {}){
       const rawName = (props.name && String(props.name).trim()) || 'Unnamed';
-      const emailLine = props.contact_email ? '<div><span class=\"label\">Email:</span> <a href=\"mailto:'+props.contact_email+'\">'+props.contact_email+'</a></div>' : '';
+      const emailLine = props.contact_email ? '<div><span class="label">Email:</span> <a href="mailto:'+props.contact_email+'">'+props.contact_email+'</a></div>' : '';
       const statusArr = toArray(props.status);
       const leadArr   = toArray(props.unify_lead);
       const photos = allPhotos(props);
-      return '<div class=\"tip\">'
-        + '<div class=\"tip-name\" id=\"sheetTitle\">'+rawName+'</div>'
-        + '<div><span class=\"label\">Leaders:</span> '+(props.leaders ?? '—')+'</div>'
+      return '<div class="tip">'
+        + '<div class="tip-name" id="sheetTitle">'+rawName+'</div>'
+        + '<div><span class="label">Leaders:</span> '+(props.leaders ?? '—')+'</div>'
         + emailLine
+        + prayerLine(props.latest_prayer_request)          // added
         + churchesLine(rawName, statusArr, leadArr, props)
         + renderGallery(photos)
         + '</div>';
@@ -685,8 +695,8 @@ Network by County <span id="totalNetworksDesktop" class="county-count">0</span>
         networksGeoJson = L.geoJSON(data, {
           style: styleNetworks,
           onEachFeature: (feature, layer) => {
-            // Labels over polygons use cleaned name
-            layer.bindTooltip(multilineName(feature.properties?.name), { permanent: true, direction: 'center', className: 'poly-label', opacity: 1 });
+            // Labels over polygons use cleaned, WRAPPED name
+            layer.bindTooltip(cleanedName(feature.properties?.name), { permanent: true, direction: 'center', className: 'poly-label', opacity: 1 });
             layer.on('mouseover', (e) => { if (isTouch()) return; 
               highlight(e);
               const tip = L.tooltip({ className: 'hover-tip', direction: 'top', opacity: 0.95, offset: [0,-8] })
