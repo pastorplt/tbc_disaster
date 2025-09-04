@@ -99,6 +99,10 @@ export default {
               tags: normalizeTextField(f['Tags']),
               number_of_churches: f['Number of Churches'] ?? '',
               unify_lead: normalizeTextField(f['Unify Lead']),
+              // NEW: prayer request fields
+              latest_prayer_request: normalizeTextField(f['Latest Prayer Request']),
+              all_prayer_requests: normalizeTextField(f['All Prayer Requests']),
+              // Photos/Images
               photo1, photo2, photo3, photo4, photo5, photo6,
               photo_count,
               image1, image2, image3, image4, image5, image6,
@@ -177,7 +181,7 @@ async function fetchRecordById(env, recordId) {
   return res.json();
 }
 
-/* ---------------- Image proxy (short‑lived in‑memory cache) ---------------- */
+/* ---------------- Image proxy (short-lived in-memory cache) ---------------- */
 
 const urlCache = new Map();
 const CACHE_TTL_MS = 8 * 60 * 1000;
