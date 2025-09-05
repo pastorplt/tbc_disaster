@@ -315,6 +315,24 @@ Network by County <span id="totalNetworksDesktop" class="county-count">0</span>
     const map = L.map('map', { center: [37.8, -122.3], zoom: 9, preferCanvas: true, zoomControl: false });
     L.control.zoom({ position: 'bottomright' }).addTo(map);
 
+    // ---- Custom panes for strict z-order ----
+    map.createPane('countiesPane');  // background polygons
+    map.getPane('countiesPane').style.zIndex = 200;
+
+    map.createPane('networksPane');  // main polygons
+    map.getPane('networksPane').style.zIndex = 400;
+
+    map.createPane('labelsPane');    // permanent polygon labels
+    map.getPane('labelsPane').style.zIndex = 450;
+    map.getPane('labelsPane').style.pointerEvents = 'none'; // labels never block clicks
+
+    map.createPane('hoverPane');     // transient hover tooltips
+    map.getPane('hoverPane').style.zIndex = 460;
+    map.getPane('hoverPane').style.pointerEvents = 'none';
+
+    map.createPane('popupsPane');    // click popups / info windows
+    map.getPane('popupsPane').style.zIndex = 700;
+
     // Basemaps
     const esriGray = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', { maxZoom: 20, attribution: 'Tiles &copy; Esri' }).addTo(map);
     const cartoPositron = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { maxZoom: 20, subdomains: 'abcd', attribution: '&copy; OpenStreetMap contributors &copy; CARTO' });
@@ -323,9 +341,8 @@ Network by County <span id="totalNetworksDesktop" class="county-count">0</span>
     const baseMaps = { 'Light': esriGray, 'Medium': cartoPositron, 'Street': esriWorldStreet, 'Topo': esriTopo };
 
     // Overlays
-    const countiesGroup = L.layerGroup().addTo(map);
     const networksGroup = L.layerGroup().addTo(map);
-    
+    const countiesGroup = L.layerGroup().addTo(map);
 
     const layerControl = L.control.layers(baseMaps, { 'Networks': networksGroup, 'Counties': countiesGroup }, { position: 'topright', collapsed: false }).addTo(map);
     const controlEl = layerControl.getContainer();
@@ -677,7 +694,7 @@ Network by County <span id="totalNetworksDesktop" class="county-count">0</span>
           if (isMobile()) {
             openSheet(infoSheetHtml(props));
           } else {
-            pick.bindPopup(infoCardHtml(props), { maxWidth: 480, closeOnClick: false, autoClose: true });
+            pick.bindPopup(infoCardHtml(props), { maxWidth: 480, closeOnClick: false, autoClose: true, pane: 'popupsPane' });
             pick.openPopup(bounds.getCenter());
             if (pick.bringToFront) pick.bringToFront();
           }
@@ -698,13 +715,14 @@ Network by County <span id="totalNetworksDesktop" class="county-count">0</span>
         const groups = new Map();
 
         networksGeoJson = L.geoJSON(data, {
+          pane: 'networksPane',
           style: styleNetworks,
           onEachFeature: (feature, layer) => {
             // Labels over polygons use cleaned, WRAPPED name
-            layer.bindTooltip(cleanedName(feature.properties?.name), { permanent: true, direction: 'center', className: 'poly-label', opacity: 1 });
+            layer.bindTooltip(cleanedName(feature.properties?.name), { permanent: true, direction: 'center', className: 'poly-label', opacity: 1, pane: 'labelsPane' });
             layer.on('mouseover', (e) => { if (isTouch()) return; 
               highlight(e);
-              const tip = L.tooltip({ className: 'hover-tip', direction: 'top', opacity: 0.95, offset: [0,-8] })
+              const tip = L.tooltip({ className: 'hover-tip', direction: 'top', opacity: 0.95, offset: [0,-8], pane: 'hoverPane' })
                 .setContent(infoCardHtml(feature.properties))
                 .setLatLng(e.latlng);
               layer._hoverTip = tip; tip.addTo(map);
@@ -719,7 +737,7 @@ Network by County <span id="totalNetworksDesktop" class="county-count">0</span>
               if (isMobile()) {
                 openSheet(infoSheetHtml(props));
               } else {
-                layer.bindPopup(infoCardHtml(props), { maxWidth: 480, closeOnClick: false, autoClose: true }).openPopup();
+                layer.bindPopup(infoCardHtml(props), { maxWidth: 480, closeOnClick: false, autoClose: true, pane: 'popupsPane' }).openPopup();
               }
             });
 
@@ -794,7 +812,7 @@ Network by County <span id="totalNetworksDesktop" class="county-count">0</span>
                   openSheet(infoSheetHtml(item.props));
                 } else {
                   const center = b.getCenter();
-                  item.layer.bindPopup(infoCardHtml(item.props), { maxWidth: 480, closeOnClick: false, autoClose: true });
+                  item.layer.bindPopup(infoCardHtml(item.props), { maxWidth: 480, closeOnClick: false, autoClose: true, pane: 'popupsPane' });
                   item.layer.openPopup(center);
                   if (item.layer.bringToFront) item.layer.bringToFront();
                 }
@@ -819,7 +837,7 @@ Network by County <span id="totalNetworksDesktop" class="county-count">0</span>
     fetch('tbc_counties.geojson', { cache: 'no-cache' })
       .then(res => res.json())
       .then(data => {
-        const counties = L.geoJSON(data, { style: styleCounties }).addTo(countiesGroup);
+        const counties = L.geoJSON(data, { pane: 'countiesPane', style: styleCounties }).addTo(countiesGroup);
         const b = counties.getBounds();
         if (b.isValid()) {
           const current = map.getBounds();
