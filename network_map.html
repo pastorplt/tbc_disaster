@@ -323,8 +323,9 @@ Network by County <span id="totalNetworksDesktop" class="county-count">0</span>
     const baseMaps = { 'Light': esriGray, 'Medium': cartoPositron, 'Street': esriWorldStreet, 'Topo': esriTopo };
 
     // Overlays
-    const networksGroup = L.layerGroup().addTo(map);
     const countiesGroup = L.layerGroup().addTo(map);
+    const networksGroup = L.layerGroup().addTo(map);
+    
 
     const layerControl = L.control.layers(baseMaps, { 'Networks': networksGroup, 'Counties': countiesGroup }, { position: 'topright', collapsed: false }).addTo(map);
     const controlEl = layerControl.getContainer();
