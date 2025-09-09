@@ -468,7 +468,10 @@ function applyFilters(){
       layerVisible.set(layer, false);
     }
   });
+
   }
+      });
+          }
 
     function clearFilters(){
       selectedStatus.clear();
@@ -491,7 +494,7 @@ function applyFilters(){
       
       const applyBtn = document.getElementById('applyFilters');
       const clearBtn = document.getElementById('clearFilters');
-      if (applyBtn) applyBtn.addEventListener('click', () => { applyFilters(); try{ document.getElementById('countySection').open = true; }catch{} });
+      if (applyBtn) applyBtn.addEventListener('click', () => { applyFilters();  });
       if (clearBtn) clearBtn.addEventListener('click', () => { clearFilters(); });
     });
 
@@ -774,7 +777,7 @@ function applyFilters(){
 
         const initialGroups = computeCountyGroups(allLegendItems);
         buildCountyLegend(initialGroups);
-        document.getElementById('countySection').open = true;
+        
 buildFilterChips();
         applyFilters();
         updateLabelSizes();
