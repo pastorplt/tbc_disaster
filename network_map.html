@@ -468,25 +468,9 @@ function applyFilters(){
     }
   });
 
-  // 2) Rebuild legend list based on what's currently allowed by filters
-  const filteredItems = allLegendItems.filter(it => matchesFilters(it.props));
-  const groups = new Map();
-  filteredItems.forEach(it => {
-    if (!groups.has(it.county)) groups.set(it.county, []);
-    groups.get(it.county).push(it);
-  });
-  buildCountyLegend(groups);
-}
+  }
       });
-      // 2) Rebuild legend list
-      const filteredItems = allLegendItems.filter(it => matchesFilters(it.props));
-      const groups = new Map();
-      filteredItems.forEach(it => {
-        if (!groups.has(it.county)) groups.set(it.county, []);
-        groups.get(it.county).push(it);
-      });
-      buildCountyLegend(groups);
-    }
+          }
 
     function clearFilters(){
       selectedStatus.clear();
