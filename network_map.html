@@ -253,6 +253,7 @@
     
 <aside class="legend-panel" id="legendPanel" aria-label="Filters panel">
   <div class="legend-header">
+    <span id="totalNetworksMobile" class="county-count" style="margin-left:auto">0</span>
     <div class="legend-grabber" aria-hidden="true"></div>
     <div class="legend-title">Filters</div>
   </div>
@@ -469,7 +470,6 @@ function applyFilters(){
   });
   }
 
-
     function clearFilters(){
       selectedStatus.clear();
       selectedLeads.clear();
@@ -560,6 +560,16 @@ function applyFilters(){
 
 
     // Legend state & helpers
+    function computeCountyGroups(items){
+      const groups = new Map();
+      (items || []).forEach(it => {
+        const key = it.county || 'Unspecified';
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key).push(it);
+      });
+      return groups;
+    }
+
     const legendPanel = document.getElementById('legendPanel');
     const legendGroupsEl = document.getElementById('legendGroups');
     const legendToggle = document.getElementById('legendToggle');
@@ -720,9 +730,7 @@ function applyFilters(){
     fetch('https://api.tbc.city/networks/polygons.geojson', { cache: 'no-cache' })
       .then(res => res.json())
       .then(data => {
-        const groups = new Map();
-
-        networksGeoJson = L.geoJSON(data, {
+                networksGeoJson = L.geoJSON(data, {
           pane: 'networksPane',
           style: styleNetworks,
           onEachFeature: (feature, layer) => {
@@ -764,7 +772,10 @@ function applyFilters(){
         const b = networksGeoJson.getBounds();
         if (b.isValid()) map.fitBounds(b.pad(0.05));
 
-        buildFilterChips();
+        const initialGroups = computeCountyGroups(allLegendItems);
+        buildCountyLegend(initialGroups);
+        document.getElementById('countySection').open = true;
+buildFilterChips();
         applyFilters();
         updateLabelSizes();
 
