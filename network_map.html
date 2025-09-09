@@ -397,7 +397,10 @@ Network by County <span id="totalNetworksDesktop" class="county-count">0</span>
     let allStatusValues = new Set();
     let allLeadValues   = new Set();
 
-    function matchesFilters(props){
+    
+    // Track whether each network layer is currently visible on the map
+    const layerVisible = new WeakMap();
+function matchesFilters(props){
       const statusVals = toArray(props.status);
       const leadVals   = toArray(props.unify_lead);
       const statusOK = (selectedStatus.size === 0) || statusVals.some(v => selectedStatus.has(v));
@@ -439,18 +442,41 @@ Network by County <span id="totalNetworksDesktop" class="county-count">0</span>
       });
     }
 
-    function applyFilters(){
-      // 1) Show/hide polygons and their labels
-      networksGeoJson.eachLayer((layer) => {
-        const props = layer.feature && layer.feature.properties || {};
-        const vis = matchesFilters(props);
-        layer.setStyle({ fillOpacity: vis ? 0.5 : 0.0, opacity: vis ? 1.0 : 0.0 });
-        layer._path && (layer._path.style.pointerEvents = vis ? 'auto' : 'none');
-        
-        // Hide/show the tooltip (label) based on filter
-        if (layer.getTooltip()) {
-          layer.getTooltip().setOpacity(vis ? 1 : 0);
-        }
+    
+function applyFilters(){
+  // 1) Toggle layers by actually removing/adding them so Canvas hit-testing can't trigger events
+  networksGeoJson.eachLayer((layer) => {
+    const props = (layer.feature && layer.feature.properties) || {};
+    const shouldShow = matchesFilters(props);
+    const isShown    = !!layerVisible.get(layer);
+
+    if (shouldShow && !isShown) {
+      // re-add to the networks group
+      layer.addTo(networksGroup);
+      layerVisible.set(layer, true);
+
+      // restore style and label visibility
+      if (layer.getTooltip()) layer.getTooltip().setOpacity(1);
+      layer.setStyle({ fillOpacity: 0.5, opacity: 1.0 });
+    } else if (!shouldShow && isShown) {
+      // clean up any transient hover tooltip
+      if (layer._hoverTip) { map.removeLayer(layer._hoverTip); layer._hoverTip = null; }
+
+      // remove from group so it receives no events in Canvas mode
+      networksGroup.removeLayer(layer);
+      layerVisible.set(layer, false);
+    }
+  });
+
+  // 2) Rebuild legend list based on what's currently allowed by filters
+  const filteredItems = allLegendItems.filter(it => matchesFilters(it.props));
+  const groups = new Map();
+  filteredItems.forEach(it => {
+    if (!groups.has(it.county)) groups.set(it.county, []);
+    groups.get(it.county).push(it);
+  });
+  buildCountyLegend(groups);
+}
       });
       // 2) Rebuild legend list
       const filteredItems = allLegendItems.filter(it => matchesFilters(it.props));
@@ -733,7 +759,8 @@ Network by County <span id="totalNetworksDesktop" class="county-count">0</span>
               if (layer._hoverTip) { map.removeLayer(layer._hoverTip); layer._hoverTip = null; }
             });
             layer.on('click', () => {
-              const props = feature.properties || {};
+              layerVisible.set(layer, true);
+            const props = feature.properties || {};
               if (isMobile()) {
                 openSheet(infoSheetHtml(props));
               } else {
