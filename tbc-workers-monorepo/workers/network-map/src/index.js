@@ -15,7 +15,7 @@
 //   The object key used: latest.geojson
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const { pathname } = new URL(request.url);
 
     // CORS preflight
@@ -45,6 +45,10 @@ export default {
 
         // Build from Airtable (same logic you had)
         const records = await fetchAllRecords(env);
+        
+        // Prewarm R2 with 400px WebP images so they're ready before clients request them
+        await prewarmAll(env, records);
+
         const origin = new URL(request.url).origin;
 
         const features = [];
@@ -128,16 +132,16 @@ export default {
         }));
       }
 
-      // Attachment proxy with EDGE CACHE
+      // Attachment redirect helpers (unchanged)
       if (request.method === 'GET' && pathname.startsWith('/img/')) {
         const { recordId, index } = parseAttachmentPath(pathname, 'img');
         if (!recordId) return withCORS(text('Bad index', 400));
-        return await handleAttachmentProxy(request, env, recordId, index, 'Photo');
+        return withCORS(await handleAttachmentRedirect(env, recordId, index, 'Photo'));
       }
       if (request.method === 'GET' && pathname.startsWith('/image/')) {
         const { recordId, index } = parseAttachmentPath(pathname, 'image');
         if (!recordId) return withCORS(text('Bad index', 400));
-        return await handleAttachmentProxy(request, env, recordId, index, 'Image');
+        return withCORS(await handleAttachmentRedirect(env, recordId, index, 'Image'));
       }
 
       if (request.method === 'GET' && pathname === '/') {
@@ -181,112 +185,104 @@ async function fetchRecordById(env, recordId) {
   return res.json();
 }
 
+/* ---------------- R2 prewarm helpers (resize to 400px WebP) ---------------- */
 
-/* ---------------- Image proxy with R2 write-through and 400px WebP resize ---------------- */
-
-const urlCache = new Map();
-const CACHE_TTL_MS = 8 * 60 * 1000; // URL lookups live briefly (Airtable rotates links)
-function getCached(key) { const v = urlCache.get(key); if (!v) return null; if (Date.now() > v.expiresAt) { urlCache.delete(key); return null; } return v.url; }
-function setCached(key, url) { urlCache.set(key, { url, expiresAt: Date.now() + CACHE_TTL_MS }); }
-
-// Build a stable R2 key; include variant to support multiple sizes if needed later
 function r2KeyForImage(recordId, index, variant = 'w400-webp') {
   return `images/${recordId}/${index}/${variant}`;
 }
 
-// Try to read an object from R2 and return a Response, or null
-async function serveFromR2(env, key) {
-  const obj = await env.NETWORK_IMAGES_BUCKET.get(key);
-  if (!obj) return null;
-  const headers = new Headers({
-    'Cache-Control': 'public, max-age=604800, immutable',
-    'CDN-Cache-Control': 'max-age=604800'
+// Limit concurrent fetches to avoid long Worker execution
+async function withConcurrency(items, limit, fn) {
+  const results = [];
+  let i = 0;
+  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (i < items.length) {
+      const cur = i++;
+      try { results[cur] = await fn(items[cur]); } catch (e) {}
+    }
   });
-  if (obj.httpMetadata?.contentType) headers.set('Content-Type', obj.httpMetadata.contentType);
-  if (obj.httpMetadata?.cacheControl) headers.set('Cache-Control', obj.httpMetadata.cacheControl);
-  if (obj.httpEtag) headers.set('ETag', obj.httpEtag);
-  headers.set('Access-Control-Allow-Origin', '*');
-  headers.set('Vary', 'Origin, Accept');
-  return new Response(obj.body, { status: 200, headers });
+  await Promise.all(workers);
+  return results;
 }
 
-/**
- * Full flow:
- *   Edge cache -> R2 (w400 webp) -> Airtable origin (resize at edge) + write-through to R2 + put in edge cache
- */
-async function handleAttachmentProxy(request, env, recordId, index, fieldName) {
+// For a single record, prewarm up to N attachments for a given field (Photo or Image)
+async function prewarmAttachments(env, recordId, fieldArray, maxCount = 6) {
+  if (!env.NETWORK_IMAGES_BUCKET) return; // R2 binding optional; skip if missing
+  if (!Array.isArray(fieldArray) || fieldArray.length === 0) return;
+
+  const tasks = fieldArray.slice(0, maxCount).map((att, idx) => ({ att, idx }));
+
+  await withConcurrency(tasks, 4, async ({ att, idx }) => {
+    const srcUrl = pickAttachmentUrl(att);
+    if (!srcUrl) return;
+
+    // Resize at edge to 400px webp
+    const response = await fetch(srcUrl, {
+      cf: {
+        cacheEverything: true,
+        image: { width: 400, format: 'webp', quality: 80 }
+      }
+    });
+    if (!response.ok) return;
+
+    // Store to R2 under stable key
+    const key = r2KeyForImage(recordId, idx, 'w400-webp');
+    await env.NETWORK_IMAGES_BUCKET.put(key, response.body, {
+      httpMetadata: { contentType: 'image/webp', cacheControl: 'public, max-age=604800, immutable' }
+    });
+  });
+}
+
+// Prewarm all records' Photo/Image attachments
+async function prewarmAll(env, records) {
+  // small batches to keep request time under control
+  for (const r of records) {
+    const f = r.fields || {};
+    const photoField = f['Photo'];
+    const imageField = f['Image'];
+
+    const isPhotoAttachmentArray =
+      Array.isArray(photoField) && photoField.length > 0 &&
+      typeof photoField[0] === 'object' && (photoField[0]?.url || photoField[0]?.thumbnails);
+
+    const isImageAttachmentArray =
+      Array.isArray(imageField) && imageField.length > 0 &&
+      typeof imageField[0] === 'object' && (imageField[0]?.url || imageField[0]?.thumbnails);
+
+    if (isPhotoAttachmentArray) {
+      await prewarmAttachments(env, r.id, photoField, 6);
+    }
+    if (isImageAttachmentArray) {
+      await prewarmAttachments(env, r.id, imageField, 6);
+    }
+  }
+}
+
+/* ---------------- Image proxy (short-lived in-memory cache) ---------------- */
+
+const urlCache = new Map();
+const CACHE_TTL_MS = 8 * 60 * 1000;
+function getCached(key) { const v = urlCache.get(key); if (!v) return null; if (Date.now() > v.expiresAt) { urlCache.delete(key); return null; } return v.url; }
+function setCached(key, url) { urlCache.set(key, { url, expiresAt: Date.now() + CACHE_TTL_MS }); }
+
+async function handleAttachmentRedirect(env, recordId, index, fieldName) {
   const idx = Number(index);
-  if (!Number.isInteger(idx) || idx < 0) return withCORS(text('Bad index', 400));
+  if (!Number.isInteger(idx) || idx < 0) return text('Bad index', 400);
 
-  const cache = caches.default;
-  const cacheKey = new Request(new URL(request.url).toString(), request);
+  const cacheKey = `${fieldName}:${recordId}:${idx}`;
+  const cached = getCached(cacheKey);
+  if (cached) return redirect(cached, 302, { 'Cache-Control': 'public, max-age=300' });
 
-  // 1) Edge cache
-  const cached = await cache.match(cacheKey);
-  if (cached) return withCORS(cached);
+  const rec = await fetchRecordById(env, recordId);
+  const attachments = Array.isArray(rec.fields?.[fieldName]) ? rec.fields[fieldName] : [];
+  const att = attachments[idx];
+  if (!att) return text(`${fieldName} not found`, 404);
 
-  // 2) Try R2
-  const key = r2KeyForImage(recordId, idx, 'w400-webp');
-  const fromR2 = await serveFromR2(env, key);
-  if (fromR2) {
-    await cache.put(cacheKey, fromR2.clone());
-    return withCORS(fromR2);
-  }
+  const freshUrl = pickAttachmentUrl(att);
+  if (!freshUrl) return text(`${fieldName} URL missing`, 404);
 
-  // 3) Resolve Airtable origin URL via short-lived in-memory cache
-  const lookupKey = `${fieldName}:${recordId}:${idx}`;
-  let originUrl = getCached(lookupKey);
-  if (!originUrl) {
-    const rec = await fetchRecordById(env, recordId);
-    const attachments = Array.isArray(rec.fields?.[fieldName]) ? rec.fields[fieldName] : [];
-    const att = attachments[idx];
-    if (!att) return withCORS(text(`${fieldName} not found`, 404));
-    originUrl = pickAttachmentUrl(att);
-    if (!originUrl) return withCORS(text(`${fieldName} URL missing`, 404));
-    setCached(lookupKey, originUrl);
-  }
-
-  // 4) Fetch from origin with Cloudflare Image Resizing (400px webp, q=80)
-  const origin = new URL(originUrl);
-  const resized = await fetch(origin, {
-    cf: {
-      cacheEverything: true,
-      image: { width: 400, format: 'webp', quality: 80 }
-    }
-  });
-  if (!resized.ok) {
-    return withCORS(text(`Upstream error ${resized.status}`, resized.status));
-  }
-
-  // Set strong caching headers for browser + edge
-  const headers = new Headers(resized.headers);
-  headers.set('Content-Type', 'image/webp');
-  headers.set('Cache-Control', 'public, max-age=604800, immutable');
-  headers.set('CDN-Cache-Control', 'max-age=604800');
-  headers.set('Access-Control-Allow-Origin', '*');
-  headers.set('Vary', 'Origin, Accept');
-
-  // Clone streams for edge cache and R2 write-through
-  const bodyForClient = resized.body;
-  const bodyForEdge   = resized.clone().body;
-  const bodyForR2     = resized.clone().body;
-
-  // Fire-and-forget writes (edge cache + R2). Use ctx.waitUntil when available.
-  // Note: ctx is passed to fetch() in the default export.
-  const putEdge = cache.put(cacheKey, new Response(bodyForEdge, { status: 200, headers }));
-  const putR2   = env.NETWORK_IMAGES_BUCKET.put(key, bodyForR2, {
-    httpMetadata: { contentType: 'image/webp', cacheControl: 'public, max-age=604800, immutable' }
-  });
-
-  try {
-    if (typeof ctx !== 'undefined' && ctx && ctx.waitUntil) {
-      ctx.waitUntil(Promise.all([putEdge, putR2]));
-    } else {
-      await Promise.all([putEdge, putR2]);
-    }
-  } catch (_) { /* non-fatal */ }
-
-  return new Response(bodyForClient, { status: 200, headers });
+  setCached(cacheKey, freshUrl);
+  return redirect(freshUrl, 302, { 'Cache-Control': 'public, max-age=300' });
 }
 
 function parseAttachmentPath(pathname, prefix) {
