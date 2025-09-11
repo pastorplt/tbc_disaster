@@ -27,7 +27,7 @@ const NAVBAR_CONFIG = {
   // bump to defeat caches when updating
   var VERSION = '2025-09-11-1';
 
-  fetch('navbar.html?v=' + encodeURIComponent(VERSION), { cache: 'no-cache' })
+  fetch('/navbar.html?v=' + encodeURIComponent(VERSION), { cache: 'no-cache' })
     .then(function(r){ return r.text(); })
     .then(function(html){
       mount.innerHTML = html;
