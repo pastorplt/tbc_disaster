@@ -309,8 +309,8 @@ Network by County <span id="totalNetworksDesktop" class="county-count">0</span>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script>
-    // Detect domain and set configuration
-    const isMapsSubdomain = window.location.hostname === 'maps.tbc.city';
+    // Authentication state (defaults to false until checked)
+    let IS_AUTHENTICATED = false;
     
     // Map with custom zoom control placement (avoid legend overlap)
     const map = L.map('map', { center: [37.8, -122.3], zoom: 9, preferCanvas: true, zoomControl: false });
@@ -479,19 +479,32 @@ function applyFilters(){
 
     // Hook up buttons after DOM ready
     document.addEventListener('DOMContentLoaded', () => {
-      // Hide filter sections and related elements on maps subdomain
-      if (isMapsSubdomain) {
-        const statusSection = document.getElementById('statusSection');
-        const leadSection = document.getElementById('leadSection');
-        const filtersUI = document.getElementById('filtersUI');
-        if (statusSection) statusSection.style.display = 'none';
-        if (leadSection) leadSection.style.display = 'none';
-        if (filtersUI) filtersUI.style.display = 'none';
-      }
-      
+      // Default: hide Team-only filters until auth is confirmed
+      const statusSection = document.getElementById('statusSection');
+      const leadSection   = document.getElementById('leadSection');
+      const filtersUI     = document.getElementById('filtersUI');
+      if (statusSection) statusSection.style.display = 'none';
+      if (leadSection)   leadSection.style.display   = 'none';
+      if (filtersUI)     filtersUI.style.display     = 'none';
+
+      // Check auth status; if logged in, show filters
+      fetch('/auth/status', { credentials: 'include' })
+        .then(r => r.ok ? r.json() : { authenticated: false })
+        .then(({ authenticated }) => {
+          IS_AUTHENTICATED = !!authenticated;
+          if (IS_AUTHENTICATED) {
+            if (statusSection) statusSection.style.display = '';
+            if (leadSection)   leadSection.style.display   = '';
+            if (filtersUI)     filtersUI.style.display     = '';
+          }
+        })
+        .catch(() => { /* keep public view on failure */ });
+
       const applyBtn = document.getElementById('applyFilters');
       const clearBtn = document.getElementById('clearFilters');
-      if (applyBtn) applyBtn.addEventListener('click', () => { applyFilters();  });
+      if (applyBtn) applyBtn.addEventListener('click', () => { applyFilters(); });
+      if (clearBtn) clearBtn.addEventListener('click', () => { clearFilters(); });
+    });
       if (clearBtn) clearBtn.addEventListener('click', () => { clearFilters(); });
     });
 
@@ -509,27 +522,32 @@ function applyFilters(){
       return Number.isFinite(n) && n > 0 ? n : 0;
     }
 
-    function churchesLine(rawName, statusArr = [], leadArr = [], props={}){
+    function churchesLine(rawName, statusArr = [], leadArr = [], props = {}){
       const count = getChurchCount(props);
       const showLink = count > 0;
-
-      if (isMapsSubdomain) {
-        return showLink
-          ? '<div class="map-and-chips"><a href="/org_map?network='+encodeURIComponent(rawName)+'" target="_blank" rel="noopener">Map of Network Churches</a></div>'
-          : '';
-      }
-      
-      const statusChips = statusArr.length ? chipsHtmlNoDots(statusArr) : '';
-      const leadChips = leadArr.length ? chipsHtmlNoDots(leadArr) : '';
-      const allChips = [statusChips, leadChips].filter(Boolean).join(' ');
 
       const linkHtml = showLink
         ? '<a href="/org_map?network='+encodeURIComponent(rawName)+'" target="_blank" rel="noopener">Map of Network Churches</a>'
         : '';
 
+      // Chips only for authenticated users
+      const statusChips = statusArr.length ? chipsHtmlNoDots(statusArr) : '';
+      const leadChips   = leadArr.length   ? chipsHtmlNoDots(leadArr)   : '';
+      const allChips    = [statusChips, leadChips].filter(Boolean).join(' ');
+
+      if (!IS_AUTHENTICATED) {
+        // Public view: link only (if available), no chips
+        return showLink ? '<div class="map-and-chips">'+linkHtml+'</div>' : '';
+      }
+
       if (!linkHtml && allChips){
         return '<div class="map-and-chips"><span class="chips-inline">'+allChips+'</span></div>';
       }
+
+      return '<div class="map-and-chips">'+linkHtml
+        + (allChips ? ' <span class="chips-inline">'+allChips+'</span>' : '')
+        + '</div>';
+    }
 
       return '<div class="map-and-chips">'+linkHtml
         + (allChips ? ' <span class="chips-inline">'+allChips+'</span>' : '')
