@@ -23,18 +23,24 @@
         </ul>
       </li>
 
-      <li class="dropdown" data-nav-item="view">
-        <button class="dropdown-toggle" type="button" aria-haspopup="true" aria-expanded="false">View</button>
-        <ul class="dropdown-content" role="menu" aria-label="View submenu">
+      <!-- Team dropdown shows only when authenticated (JS toggles it) -->
+      <li class="dropdown" data-nav-item="team" data-auth="in" style="display:none">
+        <button class="dropdown-toggle" type="button" aria-haspopup="true" aria-expanded="false">Team</button>
+        <ul class="dropdown-content" role="menu" aria-label="Team submenu">
           <li><a href="organizations.html" role="menuitem">Organizations</a></li>
           <li><a href="leaders.html" role="menuitem">Leaders</a></li>
           <li><a href="networks.html" role="menuitem">Networks</a></li>
+          <li><a href="touchpoint.html" role="menuitem">Touchpoint</a></li>
         </ul>
       </li>
 
-      <li data-nav-item="touchpoint"><a href="touchpoint.html">Touchpoint</a></li>
+      <!-- Request stays public -->
       <li data-nav-item="request"><a href="/network_prayer_request.html">Request</a></li>
-</ul>
+
+      <!-- Auth controls (JS toggles visibility) -->
+      <li data-nav-item="signin" id="signin-link"><a href="/cdn-cgi/access/login?redirect_url=/team/">Sign in</a></li>
+      <li data-nav-item="signout" id="signout-link" style="display:none"><a href="/cdn-cgi/access/logout">Sign out</a></li>
+    </ul>
   </div>
 </header>
 
@@ -66,7 +72,7 @@
     padding: 8px 12px; border-radius: 4px; display: block; opacity: .95;
     background: none; border: 0; cursor: pointer; font: inherit;
   }
-  
+
   /* CSS-based dropdown arrow */
   .dropdown-toggle::after {
     content: '';
@@ -89,9 +95,7 @@
     padding: 6px 4px;
     list-style: none;
   }
-  .dropdown .dropdown-content li {
-    list-style: none; margin: 0; padding: 0;
-  }
+  .dropdown .dropdown-content li { list-style: none; margin: 0; padding: 0; }
   .dropdown.open .dropdown-content { display: block; }
   .dropdown-content a { border-radius: 6px; }
   .dropdown-content a:hover { background: var(--brand-darker); }
@@ -120,8 +124,8 @@
       box-shadow: 0 4px 12px rgba(0,0,0,.2);
     }
     .nav-links.open { display: flex; }
-    .nav-links a, .nav-links .dropdown-toggle { 
-      padding: 10px 12px; 
+    .nav-links a, .nav-links .dropdown-toggle {
+      padding: 10px 12px;
       color: #fff;
       background: none;
     }
@@ -135,10 +139,8 @@
     .dropdown-content a { padding-left: 20px; }
   }
 
-  /* Hidden navigation items */
-  [data-nav-item][style*="display: none"] {
-    display: none !important;
-  }
+  /* Ensure hidden items truly hide */
+  [data-nav-item][style*="display: none"] { display: none !important; }
 </style>
 
 <script>
@@ -148,95 +150,33 @@
     const menu = nav.querySelector('#navMenu');
     const dropdowns = nav.querySelectorAll('.dropdown');
 
-    // Hamburger toggle - iOS Chrome compatible
-    function closeMenu(){ 
-      menu.classList.remove('open'); 
-      burger.setAttribute('aria-expanded','false');
-    }
-    function openMenu(){ 
-      menu.classList.add('open'); 
-      burger.setAttribute('aria-expanded','true');
-    }
-    
-    function handleMenuToggle(e) {
-      e.preventDefault();
-      const isOpen = menu.classList.contains('open');
-      isOpen ? closeMenu() : openMenu();
-    }
-    
-    // Use touchstart for better iOS compatibility, with click fallback
-    let touchStarted = false;
-    
-    burger.addEventListener('touchstart', function(e) {
-      touchStarted = true;
-      handleMenuToggle(e);
-    });
-    
-    burger.addEventListener('click', function(e) {
-      if (!touchStarted) {
-        handleMenuToggle(e);
-      }
-      touchStarted = false;
-    });
+    // Hamburger toggle
+    function closeMenu(){ menu.classList.remove('open'); burger.setAttribute('aria-expanded','false'); }
+    function openMenu(){ menu.classList.add('open'); burger.setAttribute('aria-expanded','true'); }
+    function handleMenuToggle(e){ e.preventDefault(); menu.classList.contains('open') ? closeMenu() : openMenu(); }
 
-    // Handle multiple dropdowns
-    dropdowns.forEach(function(dropdown) {
+    let touchStarted = false;
+    burger.addEventListener('touchstart', e => { touchStarted = true; handleMenuToggle(e); });
+    burger.addEventListener('click', e => { if (!touchStarted) handleMenuToggle(e); touchStarted = false; });
+
+    // Dropdowns
+    dropdowns.forEach(function(dropdown){
       const toggle = dropdown.querySelector('.dropdown-toggle');
-      
       function closeDropdown(){ dropdown.classList.remove('open'); toggle.setAttribute('aria-expanded','false'); }
       function openDropdown(){ dropdown.classList.add('open'); toggle.setAttribute('aria-expanded','true'); }
-      
+
       toggle.addEventListener('click', function(e){
         e.stopPropagation();
         const isOpen = dropdown.classList.contains('open');
-        
-        // Close all other dropdowns
-        dropdowns.forEach(function(otherDropdown) {
-          if (otherDropdown !== dropdown) {
-            otherDropdown.classList.remove('open');
-            otherDropdown.querySelector('.dropdown-toggle').setAttribute('aria-expanded','false');
-          }
-        });
-        
-        // Toggle current dropdown
+        dropdowns.forEach(function(other){ if (other !== dropdown) { other.classList.remove('open'); other.querySelector('.dropdown-toggle').setAttribute('aria-expanded','false'); }});
         isOpen ? closeDropdown() : openDropdown();
       });
     });
 
-    // Click outside to close
-    document.addEventListener('click', function(e){
-      if (!nav.contains(e.target)) {
-        dropdowns.forEach(function(dropdown) {
-          dropdown.classList.remove('open');
-          dropdown.querySelector('.dropdown-toggle').setAttribute('aria-expanded','false');
-        });
-        closeMenu();
-      }
-    });
-
-    // ESC to close
-    document.addEventListener('keydown', function(e){
-      if (e.key === 'Escape') {
-        dropdowns.forEach(function(dropdown) {
-          dropdown.classList.remove('open');
-          dropdown.querySelector('.dropdown-toggle').setAttribute('aria-expanded','false');
-        });
-        closeMenu();
-      }
-    });
-
-    // Reset when resizing
+    // Click outside / ESC to close
+    document.addEventListener('click', function(e){ if (!nav.contains(e.target)) { dropdowns.forEach(d=>{ d.classList.remove('open'); d.querySelector('.dropdown-toggle').setAttribute('aria-expanded','false'); }); closeMenu(); }});
+    document.addEventListener('keydown', function(e){ if (e.key === 'Escape') { dropdowns.forEach(d=>{ d.classList.remove('open'); d.querySelector('.dropdown-toggle').setAttribute('aria-expanded','false'); }); closeMenu(); }});
     let lastWide = window.innerWidth > 720;
-    window.addEventListener('resize', function(){
-      const wide = window.innerWidth > 720;
-      if (wide !== lastWide) {
-        closeMenu();
-        dropdowns.forEach(function(dropdown) {
-          dropdown.classList.remove('open');
-          dropdown.querySelector('.dropdown-toggle').setAttribute('aria-expanded','false');
-        });
-        lastWide = wide;
-      }
-    });
+    window.addEventListener('resize', function(){ const wide = window.innerWidth > 720; if (wide !== lastWide) { closeMenu(); dropdowns.forEach(d=>{ d.classList.remove('open'); d.querySelector('.dropdown-toggle').setAttribute('aria-expanded','false'); }); lastWide = wide; }});
   })();
 </script>
