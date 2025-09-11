@@ -1,15 +1,15 @@
 name: Mirror to tbc_public_maps
 
 on:
-  push:
-    branches:
-      - '**'
-    tags:
-      - '**'
-  delete:
+#  push:
+#    branches:
+#      - '**'
+#    tags:
+#      - '**'
+#  delete:
   workflow_dispatch:
-  schedule:
-    - cron: '17 7 * * *'
+#  schedule:
+#    - cron: '17 7 * * *'
 
 permissions:
   contents: read
