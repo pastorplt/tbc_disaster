@@ -505,8 +505,6 @@ function applyFilters(){
       if (applyBtn) applyBtn.addEventListener('click', () => { applyFilters(); });
       if (clearBtn) clearBtn.addEventListener('click', () => { clearFilters(); });
     });
-      if (clearBtn) clearBtn.addEventListener('click', () => { clearFilters(); });
-    });
 
     function highlight(e){ e.target.setStyle({ weight: 3, color:'#000', fillOpacity: 0.7 }); }
     function resetHighlight(e){ networksGeoJson && networksGeoJson.resetStyle(e.target); }
