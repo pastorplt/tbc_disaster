@@ -1,23 +1,18 @@
 // include-nav.js (safe cross-browser version)
 
 // ========== CONFIGURATION ==========
-// Define which navigation items to show for each domain
 const NAVBAR_CONFIG = {
   'app.tbc.city': {
     showMaps: true,
-    showView: true,
-    showTouchpoint: true
+    showTeam: true
   },
   'maps.tbc.city': {
     showMaps: true,
-    showView: false,
-    showTouchpoint: false
+    showTeam: false
   },
-  // Default configuration for other domains (including localhost, staging, etc.)
   'default': {
     showMaps: true,
-    showView: true,
-    showTouchpoint: true
+    showTeam: true
   }
 };
 // ===================================
@@ -26,26 +21,20 @@ const NAVBAR_CONFIG = {
   var mount = document.getElementById('navbar-include');
   if (!mount) return;
 
-  // Determine current domain configuration
   var hostname = window.location.hostname;
   var config = NAVBAR_CONFIG[hostname] || NAVBAR_CONFIG['default'];
 
-  // Add a version query to defeat CDN caches when updating
-  var VERSION = '2025-09-04-2';
+  // bump to defeat caches when updating
+  var VERSION = '2025-09-11-1';
 
   fetch('navbar.html?v=' + encodeURIComponent(VERSION), { cache: 'no-cache' })
     .then(function(r){ return r.text(); })
     .then(function(html){
       mount.innerHTML = html;
 
-      // Apply domain-specific configuration safely
-      try {
-        applyNavbarConfig(mount, config);
-      } catch (e) {
-        console.error('applyNavbarConfig error:', e);
-      }
+      try { applyNavbarConfig(mount, config); } catch (e) { console.error('applyNavbarConfig error:', e); }
 
-      // Run any <script> tags that might be inside navbar.html (safety for future)
+      // execute any inline scripts in navbar.html
       var scripts = mount.querySelectorAll('script');
       scripts.forEach(function(oldScript){
         var s = document.createElement('script');
@@ -58,7 +47,6 @@ const NAVBAR_CONFIG = {
       // ---------- Active-link highlight ----------
       var file = (location.pathname.split('/').pop() || 'index.html').split('?')[0].split('#')[0];
 
-      // map file → selector in the navbar
       var map = {
         'network_map.html': 'a[href="network_map.html"]',
         'org_map.html': 'a[href="org_map.html"]',
@@ -70,7 +58,6 @@ const NAVBAR_CONFIG = {
         'network_prayer_request.html': 'a[href="/network_prayer_request.html"]'
       };
 
-      // Highlight exact match
       var sel = map[file];
       if (sel) {
         var link = mount.querySelector(sel);
@@ -80,7 +67,6 @@ const NAVBAR_CONFIG = {
         }
       }
 
-      // If we're on a Maps subpage, also highlight the "Maps" parent
       var mapsFiles = ['network_map.html', 'org_map.html', 'disaster_data.html'];
       if (mapsFiles.indexOf(file) !== -1) {
         var mapsDropdown = findDropdownByLabel(mount, 'Maps');
@@ -90,17 +76,18 @@ const NAVBAR_CONFIG = {
         }
       }
 
-      // If we're on a View subpage, also highlight the "View" parent
-      var viewFiles = ['organizations.html','leaders.html','networks.html'];
-      if (viewFiles.indexOf(file) !== -1) {
-        var viewDropdown = findDropdownByLabel(mount, 'View');
-        if (viewDropdown) {
-          var toggle2 = viewDropdown.querySelector('.dropdown-toggle');
+      // Highlight Team parent for known team pages
+      var teamFiles = ['organizations.html','leaders.html','networks.html','touchpoint.html'];
+      if (teamFiles.indexOf(file) !== -1) {
+        var teamDropdown = findDropdownByLabel(mount, 'Team');
+        if (teamDropdown) {
+          var toggle2 = teamDropdown.querySelector('.dropdown-toggle');
           if (toggle2) toggle2.classList.add('active');
         }
       }
 
-      // If we're on the root (index.html) there's no "Home" link – logo serves as home.
+      // After render, toggle auth-based items
+      initAuthVisibility(mount);
     })
     .catch(function(err){
       console.error('Navbar include failed:', err);
@@ -109,7 +96,6 @@ const NAVBAR_CONFIG = {
 
   // ------ Helpers ------
   function findDropdownByLabel(root, labelText) {
-    // Searches for .dropdown whose .dropdown-toggle contains labelText
     var dropdowns = root.querySelectorAll('.dropdown');
     for (var i = 0; i < dropdowns.length; i++) {
       var toggle = dropdowns[i].querySelector('.dropdown-toggle');
@@ -120,30 +106,48 @@ const NAVBAR_CONFIG = {
     return null;
   }
 
-  function hideElement(el) {
-    if (el && el.style) el.style.display = 'none';
-  }
+  function hideElement(el) { if (el && el.style) el.style.display = 'none'; }
+  function showElement(el) { if (el && el.style) el.style.display = ''; }
 
-  // Function to apply domain-specific navbar configuration
   function applyNavbarConfig(mount, config) {
-    // Hide/show Maps dropdown
     if (!config.showMaps) {
       var mapsDropdown = findDropdownByLabel(mount, 'Maps');
       hideElement(mapsDropdown);
     }
-
-    // Hide/show View dropdown
-    if (!config.showView) {
-      var viewDropdown = findDropdownByLabel(mount, 'View');
-      hideElement(viewDropdown);
+    if (!config.showTeam) {
+      var teamDropdown = findDropdownByLabel(mount, 'Team');
+      hideElement(teamDropdown);
     }
+  }
 
-    // Hide/show Touchpoint link
-    if (!config.showTouchpoint) {
-      var touchpointLink = mount.querySelector('a[href="touchpoint.html"]');
-      if (touchpointLink && touchpointLink.parentNode && touchpointLink.parentNode.tagName === 'LI') {
-        hideElement(touchpointLink.parentNode);
-      }
-    }
+  // Check auth status and toggle Team + Sign in/out links
+  function initAuthVisibility(mount) {
+    var teamDropdown = findDropdownByLabel(mount, 'Team');
+    var signin = mount.querySelector('#signin-link');
+    var signout = mount.querySelector('#signout-link');
+
+    // Default to logged-out view
+    if (teamDropdown) hideElement(teamDropdown);
+    if (signout) hideElement(signout);
+    if (signin) showElement(signin);
+
+    // Try to detect Cloudflare Access auth
+    fetch('/auth/status', { credentials: 'include' })
+      .then(function(r){ return r.ok ? r.json() : { authenticated:false }; })
+      .then(function(data){
+        var authed = !!(data && data.authenticated);
+        if (authed) {
+          if (teamDropdown) showElement(teamDropdown);
+          if (signout) showElement(signout);
+          if (signin) hideElement(signin);
+        } else {
+          if (teamDropdown) hideElement(teamDropdown);
+          if (signout) hideElement(signout);
+          if (signin) showElement(signin);
+        }
+      })
+      .catch(function(){
+        // On failure, stay in logged-out view
+      });
   }
 })();
