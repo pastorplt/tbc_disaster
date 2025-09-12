@@ -86,6 +86,8 @@
       margin-top: 24px;
       display: inline-flex;
       gap: 14px;
+      flex-wrap: wrap;
+      justify-content: center;
     }
     .btn {
       display: inline-block;
@@ -102,92 +104,45 @@
       color: #bf3426;
     }
     .btn:hover { filter: brightness(1.05); }
-    
-    /* Domain-specific hidden elements */
-    [data-domain-element][style*="display: none"] {
-      display: none !important;
-    }
+
+    /* Hidden handler (JS toggles) */
+    [data-auth-hide] { display: none; }
   </style>
 </head>
 <body>
   <div id="navbar-include"></div>
-  <script src="include-nav.js"></script>
+  <script src="/include-nav.js"></script>
 
   <main>
-    <img class="hero-logo" src="TBC_full_logo.gif" alt="TBC Logo">
-    <h1>Welcome to Transforming the Bay with Christ<br><span data-domain-element="team-app-title">Team App</span></h1>
-    <p class="subhead" data-domain-element="explore-phrase">Explore the internal tools that make the TBC magic happen!</p>
+    <img class="hero-logo" src="/TBC_full_logo.gif" alt="TBC Logo">
+    <h1>Welcome to Transforming the Bay with Christ<br><span data-auth-target="team-app-title" data-auth-hide>Team App</span></h1>
+    <p class="subhead" data-auth-target="explore-phrase" data-auth-hide>Explore the internal tools that make the TBC magic happen!</p>
 
     <div class="cta">
-      <a class="btn" href="network_map.html">View Networks</a>
-      <a class="btn secondary" href="touchpoint.html" data-domain-element="touchpoint-btn">Touchpoint</a>
-      <!-- New -->
-      <a class="btn" href="network_map.html?random=1" title="Open a random network for prayer">Pray for Network</a>
-      <!-- New -->
-  <a class="btn secondary" href="/network_prayer_request.html" data-domain-element="prayer-request-btn">Submit Prayer Request</a>
-</div>
+      <a class="btn" href="/network_map.html">View Networks</a>
+      <a class="btn secondary" href="/team/touchpoint.html" data-auth-target="touchpoint-btn" data-auth-hide>Touchpoint</a>
+      <a class="btn" href="/network_map.html?random=1" title="Open a random network for prayer">Pray for Network</a>
+      <a class="btn secondary" href="/network_prayer_request.html">Submit Prayer Request</a>
+    </div>
   </main>
 
   <script>
-    // ========== CONFIGURATION ==========
-    // Define which content elements to show for each domain
-    const INDEX_CONFIG = {
-      'app.tbc.city': {
-        showTeamAppTitle: true,
-        showExplorePhrase: true,
-        showTouchpointBtn: true,
-        showPrayerRequestBtn: true
-      },
-      'maps.tbc.city': {
-        showTeamAppTitle: false,
-        showExplorePhrase: false,
-        showTouchpointBtn: false,
-        showPrayerRequestBtn: true
-      },
-      // Default configuration for other domains (including localhost, staging, etc.)
-      'default': {
-        showTeamAppTitle: true,
-        showExplorePhrase: true,
-        showTouchpointBtn: true,
-        showPrayerRequestBtn: false
+    // Toggle UI based on Cloudflare Access auth status
+    (function(){
+      function showAuthed() {
+        document.querySelectorAll('[data-auth-target]').forEach(function(el){
+          el.removeAttribute('data-auth-hide');
+          el.style.display = '';
+        });
       }
-    };
-    // ===================================
-
-    (function applyDomainConfig() {
-      // Determine current domain configuration
-      var hostname = window.location.hostname;
-      var config = INDEX_CONFIG[hostname] || INDEX_CONFIG['default'];
-
-      // Hide/show Team App title
-      if (!config.showTeamAppTitle) {
-        var teamAppTitle = document.querySelector('[data-domain-element="team-app-title"]');
-        if (teamAppTitle) {
-          teamAppTitle.style.display = 'none';
-        }
-      }
-
-      // Hide/show explore phrase
-      if (!config.showExplorePhrase) {
-        var explorePhrase = document.querySelector('[data-domain-element="explore-phrase"]');
-        if (explorePhrase) {
-          explorePhrase.style.display = 'none';
-        }
-      }
-
-      // Hide/show Touchpoint button
-      if (!config.showTouchpointBtn) {
-        var touchpointBtn = document.querySelector('[data-domain-element="touchpoint-btn"]');
-        if (touchpointBtn) {
-          touchpointBtn.style.display = 'none';
-        }
-      }
-
-      // Hide/show Prayer Request button
-      if (!config.showPrayerRequestBtn) {
-        var prBtn = document.querySelector('[data-domain-element="prayer-request-btn"]');
-        if (prBtn) prBtn.style.display = 'none';
-      }
+      // Default: keep authed-only items hidden until we know
+      // Fetch auth status
+      fetch('/auth/status', { credentials: 'include' })
+        .then(function(r){ return r.ok ? r.json() : { authenticated:false }; })
+        .then(function(data){
+          if (data && data.authenticated) showAuthed();
+        })
+        .catch(function(){ /* stay public by default */ });
     })();
   </script>
 </body>
