@@ -4,7 +4,7 @@
   <div class="nav">
     <a href="/" aria-label="TBC Home" class="brand">
       <span class="logo-wrap">
-        <img src="/TBC_full_logo.gif" alt="TBC logo">
+        <img src="/TBC_full_logo_white.png" alt="TBC logo">
       </span>
     </a>
 
@@ -13,33 +13,9 @@
       <span></span><span></span><span></span>
     </button>
 
-    <!-- Request stays public -->
-    <li data-nav-item="request"><a href="/network_prayer_request.html">Request</a></li>
-
     <ul class="nav-links" id="navMenu">
-      <li class="dropdown" data-nav-item="maps">
-        <button class="dropdown-toggle" type="button" aria-haspopup="true" aria-expanded="false">Maps</button>
-        <ul class="dropdown-content" role="menu" aria-label="Maps submenu">
-          <li><a href="/network_map.html" role="menuitem">Networks</a></li>
-          <li><a href="/org_map.html" role="menuitem">Organizations</a></li>
-          <li><a href="/disaster_data.html" role="menuitem">Disaster Data</a></li>
-        </ul>
-      </li>
-
-      <!-- Team dropdown shows only when authenticated (JS toggles it) -->
-      <li class="dropdown" data-nav-item="team" data-auth="in" style="display:none">
-        <button class="dropdown-toggle" type="button" aria-haspopup="true" aria-expanded="false">Team</button>
-        <ul class="dropdown-content" role="menu" aria-label="Team submenu">
-          <li><a href="/team/organizations.html" role="menuitem">Organizations</a></li>
-          <li><a href="/team/leaders.html" role="menuitem">Leaders</a></li>
-          <li><a href="/team/networks.html" role="menuitem">Networks</a></li>
-          <li><a href="/team/touchpoint.html" role="menuitem">Touchpoint</a></li>
-        </ul>
-      </li>
-
-      <!-- Auth controls (JS toggles visibility) -->
-      <li data-nav-item="signin" id="signin-link"><a href="/team/login-landing">Sign in</a></li>
-      <li data-nav-item="signout" id="signout-link" style="display:none"><a href="/signout">Sign out</a></li>
+        <li><a href="disaster_survey.html">Survey</a></li>
+        <li><a href="disaster_map.html">Maps</a></li>
     </ul>
   </div>
 </header>
@@ -139,8 +115,6 @@
     .dropdown-content a { padding-left: 20px; }
   }
 
-  /* Ensure hidden items truly hide */
-  [data-nav-item][style*="display: none"] { display: none !important; }
 </style>
 
 <script>
