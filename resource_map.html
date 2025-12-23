@@ -41,13 +41,12 @@
       font: 13px/1.35 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
       -webkit-overflow-scrolling: touch; overscroll-behavior: contain; touch-action: pan-y;
     }
-    /* Desktop hide/show support */
     .legend-panel.closed { display: none; }
 
     .legend-header { display: none; }
     .legend-title { font-weight: 700; font-size: 14px; margin: 4px 0 8px; color: #111; }
 
-    /* Dataset Selector Styling */
+    /* Dataset Selector */
     .dataset-select-container { margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #e5e7eb; }
     .dataset-select-label { display: block; font-weight: 600; margin-bottom: 4px; font-size: 12px; color: #4b5563; }
     .form-select {
@@ -64,7 +63,7 @@
 
     .tag-list {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr)); /* two columns */
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 6px;
       margin-top: 8px;
     }
@@ -76,6 +75,7 @@
     .btn { border: 1px solid #d9deea; background: #fff; padding: 8px 12px; border-radius: 10px; font-size: 13px; cursor: pointer; }
     .btn-primary { border-color: #3b82f6; background: #3b82f6; color: #fff; }
 
+    /* Popup Styling */
     .popup { font: 13px/1.35 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; min-width: 260px; max-width: 380px; color: #111; }
     .popup h3 { font-size: 16px; margin: 0 0 4px; font-weight: 800; color: #bf3426; }
     .popup-meta { font-size: 11px; color: #6b7280; margin-bottom: 8px; }
@@ -128,7 +128,7 @@
     .leaflet-control-layers .basemap-heading,
     .leaflet-control-layers .overlays-heading { font-weight: 600; margin-bottom: 4px; display: block; }
   
-    /* === Chip color overrides (filters & popup) === */
+    /* Chip color overrides */
     .tag-pill, .chip {
       --chip-bg: #f8fafc;
       --chip-border: #e1e5ee;
@@ -183,7 +183,6 @@
     /* =========================================================
        CONFIG & OVERRIDES
     ========================================================= */
-    // Map URL configs
     const DATASETS = {
       sonoma: {
         url: "https://api.tbc.city/disaster/org_points.geojson",
@@ -303,7 +302,6 @@
     const el = (s) => document.querySelector(s);
     const normKey = (s) => String(s||'').toLowerCase().replace(/[\s._-]+/g,'').replace(/[^\p{L}\p{N}]/gu,'');
     
-    // Updated field resolver to handle both datasets
     function resolveFieldsFromSample(props) {
       const keys = Object.keys(props||{});
       const byNorm = new Map(keys.map(k => [normKey(k), k]));
@@ -318,25 +316,22 @@
         type: pick("Organization Type","organization_type","Type"),
         address: pick("Full Address","full_address","Address"),
         
-        // Standard Contact (Sonoma)
+        // Standard Contact
         contact: pick("Disaster Contact","disaster_contact"),
         email: pick("Disaster Email","disaster_email"),
         phone: pick("Disaster Phone","disaster_phone"),
         
-        // Resource Data Specifics
+        // Resource Data
         org_leader: pick("org_leader"),
         org_leader_email: pick("org_leader_email"),
         org_leader_phone: pick("org_leader_phone"),
-        
         compassion_leader: pick("compassion_leader"),
         compassion_leader_email: pick("compassion_leader_email"),
         compassion_leader_phone: pick("compassion_leader_phone"),
-        
         org_size: pick("org_size", "Size"),
         other_resources: pick("other_resources", "Other Resources"),
         last_update: pick("last_update", "Timestamp"),
 
-        // Arrays
         regular: pick("Regular Services","regular_services"),
         disaster: pick("Disaster Services","disaster_services"),
         physical: pick("Physical Resources","physical_resources"),
@@ -345,11 +340,7 @@
 
     function normalizeTags(v) { if (!v && v !== 0) return []; if (Array.isArray(v)) return v.map(x => String(x).trim()).filter(Boolean); return String(v).split(/[,;|]/).map(s => s.trim()).filter(Boolean); }
     function uniqueSortedTags(features, fieldKey) { const set = new Set(); for (const f of features) normalizeTags(f.properties?.[fieldKey]).forEach(t => set.add(t)); return Array.from(set).sort((a,b)=>a.localeCompare(b)); }
-
-    function labelFor(groupKey, tag) {
-      const overrides = TAG_LABEL_OVERRIDES[groupKey] || {};
-      return overrides[tag] || tag;
-    }
+    function labelFor(groupKey, tag) { const overrides = TAG_LABEL_OVERRIDES[groupKey] || {}; return overrides[tag] || tag; }
 
     function buildTagList(container, tags, groupKey) {
       container.innerHTML = "";
@@ -376,7 +367,6 @@
       });
     }
 
-    // Coloring
     const PALETTE30 = ['#1f77b4','#ff7f0e','#2ca02c','#d62728','#9467bd','#8c564b','#e377c2','#7f7f7f','#bcbd22','#17becf','#393b79','#637939','#8c6d31','#843c39','#7b4173','#3182bd','#31a354','#756bb1','#636363','#e6550d','#9edae5','#c7c7c7','#bc80bd','#ffed6f','#a6cee3','#b2df8a','#fb9a99','#fdbf6f','#cab2d6','#6a3d9a'];
     function hashIndex(str, m){ let h=0; for(let i=0;i<str.length;i++) h=(h*31 + str.charCodeAt(i))|0; return Math.abs(h)%m; }
     function hexToRgba(hex, alpha) {
@@ -393,17 +383,30 @@
     function colorForFeature(props) { const key = `${props[FIELDS.name]||''}|${props[FIELDS.address]||''}`; return PALETTE30[ hashIndex(key, PALETTE30.length) ]; }
 
     // =========================================================
-    // POPUP LOGIC
+    // FORMATTING HELPERS
     // =========================================================
-    
-    // Helper to join Name, Email, Phone
+
+    // Phone: formats 14085551212 -> (408) 555-1212
+    function formatUSPhone(str) {
+      if (!str) return "";
+      const cleaned = ('' + str).replace(/\D/g, '');
+      // If starts with 1 and is 11 digits, strip the 1
+      const num = (cleaned.length === 11 && cleaned[0] === '1') ? cleaned.substring(1) : cleaned;
+      const match = num.match(/^(\d{3})(\d{3})(\d{4})$/);
+      if (match) {
+        return `(${match[1]}) ${match[2]}-${match[3]}`;
+      }
+      return str; // Return original if it doesn't match standard US length
+    }
+
     function formatContactString(props, nameKey, emailKey, phoneKey) {
       const name = props[nameKey] || "";
       const email = props[emailKey] || "";
-      const phone = props[phoneKey] || "";
+      let phone = props[phoneKey] || "";
       
-      // If we only have IDs (like "rec...") and no actual name, it might look ugly. 
-      // But assuming the JSON has resolved names:
+      // Clean up phone if it exists
+      if (phone) phone = formatUSPhone(phone);
+      
       if (!name && !email && !phone) return null;
       
       const parts = [];
@@ -414,13 +417,33 @@
       return parts.join(", ");
     }
 
+    function cleanAddress(addr) {
+      if (!addr) return "";
+      // Removes surrounding quotes if they exist
+      return addr.replace(/^"|"$/g, '');
+    }
+
+    function formatDate(val) {
+      if (!val) return "";
+      // Try to rely on the string first if it looks like MM/DD/YYYY or similar
+      // If it's a raw ISO string (e.g. 2025-10-31T...), parse it.
+      if (val.includes('T') && val.includes('Z')) {
+         const d = new Date(val);
+         if (!isNaN(d.getTime())) return d.toLocaleDateString();
+      }
+      // Otherwise, return the string as-is (e.g. "10/31/2025")
+      return val;
+    }
+
+    // =========================================================
+    // POPUP LOGIC
+    // =========================================================
     function makePopup(props) {
       const name = props[FIELDS.name] || "(No name)";
       const website = props[FIELDS.website];
       const orgType = props[FIELDS.type];
-      const address = props[FIELDS.address];
+      const address = cleanAddress(props[FIELDS.address]);
       
-      // Arrays
       const reg = normalizeTags(props[FIELDS.regular]);
       const dis = normalizeTags(props[FIELDS.disaster]);
       const phy = normalizeTags(props[FIELDS.physical]);
@@ -434,27 +457,26 @@
       let contactInfoHtml = "";
       let metaInfoHtml = "";
 
-      // === LOGIC SWITCH BASED ON DATASET ===
       if (currentDatasetKey === 'resource') {
-        // Resource Data Display
         const orgLeader = formatContactString(props, FIELDS.org_leader, FIELDS.org_leader_email, FIELDS.org_leader_phone);
         const disasterContact = formatContactString(props, FIELDS.contact, FIELDS.email, FIELDS.phone);
         const compassionLeader = formatContactString(props, FIELDS.compassion_leader, FIELDS.compassion_leader_email, FIELDS.compassion_leader_phone);
         const size = props[FIELDS.org_size];
-        const update = props[FIELDS.last_update];
+        const updateRaw = props[FIELDS.last_update];
+        const update = formatDate(updateRaw);
         
         if (size) metaInfoHtml += `<span>Size: ${size}</span>`;
-        if (update) metaInfoHtml += ` • <span>Updated: ${new Date(update).toLocaleDateString()}</span>`;
+        if (update) metaInfoHtml += ` • <span>Updated: ${update}</span>`;
         
         if (orgLeader) contactInfoHtml += `<div class="field-row"><b>Org Leader:</b> ${orgLeader}</div>`;
         if (disasterContact) contactInfoHtml += `<div class="field-row"><b>Disaster Contact:</b> ${disasterContact}</div>`;
         if (compassionLeader) contactInfoHtml += `<div class="field-row"><b>Compassion Leader:</b> ${compassionLeader}</div>`;
         
       } else {
-        // Standard Sonoma Display
         const contact = props[FIELDS.contact];
         const email = props[FIELDS.email];
-        const phone = props[FIELDS.phone];
+        let phone = props[FIELDS.phone];
+        if (phone) phone = formatUSPhone(phone);
         
         if (contact) contactInfoHtml += `<div class="field-row"><b>Disaster Contact:</b> ${contact}</div>`;
         if (email) contactInfoHtml += `<div class="field-row"><b>Email:</b> <a href="mailto:${email}">${email}</a></div>`;
@@ -535,7 +557,6 @@
       markersLayer.clearLayers();
       allFeatures = [];
       
-      // Reset filter HTML
       el("#list-regular").innerHTML = "Loading...";
       el("#list-disaster").innerHTML = "";
       el("#list-physical").innerHTML = "";
@@ -550,7 +571,6 @@
             return;
           }
 
-          // Re-detect fields based on the new data
           FIELDS = resolveFieldsFromSample(features[0]?.properties || {});
           
           const regTags = uniqueSortedTags(features, FIELDS.regular);
@@ -575,7 +595,6 @@
     el("#applyFilters").addEventListener("click", applyFilters);
     el("#clearFilters").addEventListener("click", clearFilters);
 
-    // Initial load
     loadData('sonoma');
 
     // Legend interactions
