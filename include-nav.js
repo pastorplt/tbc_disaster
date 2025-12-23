@@ -25,7 +25,7 @@ const NAVBAR_CONFIG = {
   var config = NAVBAR_CONFIG[hostname] || NAVBAR_CONFIG['default'];
 
   // bump to defeat caches when updating
-  var VERSION = '2025-09-11-1';
+  var VERSION = '2025-09-11-2'; // Bumped version number
 
   fetch('/navbar.html?v=' + encodeURIComponent(VERSION), { cache: 'no-cache' })
     .then(function(r){ return r.text(); })
@@ -55,7 +55,10 @@ const NAVBAR_CONFIG = {
         'organizations.html': 'a[href="organizations.html"]',
         'leaders.html': 'a[href="leaders.html"]',
         'networks.html': 'a[href="networks.html"]',
-        'network_prayer_request.html': 'a[href="/network_prayer_request.html"]'
+        'network_prayer_request.html': 'a[href="/network_prayer_request.html"]',
+        'resource_survey.html': 'a[href="resource_survey.html"]',
+        'resource_map.html': 'a[href="resource_map.html"]',
+        'resource_table.html': 'a[href="resource_table.html"]' // Added new page here
       };
 
       var sel = map[file];
@@ -67,7 +70,7 @@ const NAVBAR_CONFIG = {
         }
       }
 
-      var mapsFiles = ['network_map.html', 'org_map.html', 'disaster_data.html'];
+      var mapsFiles = ['network_map.html', 'org_map.html', 'disaster_data.html', 'resource_map.html'];
       if (mapsFiles.indexOf(file) !== -1) {
         var mapsDropdown = findDropdownByLabel(mount, 'Maps');
         if (mapsDropdown) {
