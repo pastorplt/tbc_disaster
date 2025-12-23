@@ -47,6 +47,14 @@
     .legend-header { display: none; }
     .legend-title { font-weight: 700; font-size: 14px; margin: 4px 0 8px; color: #111; }
 
+    /* Dataset Selector Styling */
+    .dataset-select-container { margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #e5e7eb; }
+    .dataset-select-label { display: block; font-weight: 600; margin-bottom: 4px; font-size: 12px; color: #4b5563; }
+    .form-select {
+      width: 100%; padding: 8px; border-radius: 8px; border: 1px solid #d1d5db;
+      font-size: 14px; background: #fff; cursor: pointer;
+    }
+
     details { margin-bottom: 8px; border-radius: 8px; background: #f8fafc; border: 1px solid #e5e7eb; padding: 6px 8px; }
     details[open] { background: #eef2ff; }
     summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 4px; font-weight: 600; }
@@ -55,11 +63,11 @@
     details[open] .chev { transform: rotate(90deg); }
 
     .tag-list {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr)); /* two columns */
-  gap: 6px;
-  margin-top: 8px;
-}
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr)); /* two columns */
+      gap: 6px;
+      margin-top: 8px;
+    }
 
     .tag-pill { display: inline-flex; align-items: center; gap: 8px; border: 1px solid #e3e6ef; border-radius: 999px; padding: 6px 10px; background: #fff; font-size: 13px; user-select: none; cursor: pointer; }
     .tag-pill input { cursor: pointer; }
@@ -68,10 +76,11 @@
     .btn { border: 1px solid #d9deea; background: #fff; padding: 8px 12px; border-radius: 10px; font-size: 13px; cursor: pointer; }
     .btn-primary { border-color: #3b82f6; background: #3b82f6; color: #fff; }
 
-    .popup { font: 13px/1.35 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; min-width: 240px; max-width: 360px; color: #111; }
-    .popup h3 { font-size: 15px; margin: 0 0 6px; font-weight: 700; }
-    .field-row { margin: 4px 0; }
-    .field-row b { font-weight: 600; }
+    .popup { font: 13px/1.35 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; min-width: 260px; max-width: 380px; color: #111; }
+    .popup h3 { font-size: 16px; margin: 0 0 4px; font-weight: 800; color: #bf3426; }
+    .popup-meta { font-size: 11px; color: #6b7280; margin-bottom: 8px; }
+    .field-row { margin: 4px 0; word-break: break-word; }
+    .field-row b { font-weight: 650; color: #374151; }
     .tag-strip { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
     .chip { display: inline-block; padding: 3px 8px; border-radius: 999px; border: 1px solid #e1e5ee; background: #f8fafc; font-size: 12px; }
     .popup hr { border:0; border-top:1px solid #e9ecef; margin:8px 0; }
@@ -119,28 +128,16 @@
     .leaflet-control-layers .basemap-heading,
     .leaflet-control-layers .overlays-heading { font-weight: 600; margin-bottom: 4px; display: block; }
   
-/* === Chip color overrides (filters & popup) === */
-.tag-pill,
-.chip {
-  --chip-bg: #f8fafc;
-  --chip-border: #e1e5ee;
-  --chip-text: #111;
-  background: var(--chip-bg);
-  border: 1px solid var(--chip-border);
-  color: var(--chip-text);
-}
-.tag-pill {
-  display: inline-flex; align-items: center; gap: 8px;
-  border-radius: 999px; padding: 6px 10px;
-  font-size: 13px; user-select: none; cursor: pointer;
-}
-.tag-pill input { cursor: pointer; }
-.chip {
-  display: inline-block; padding: 3px 8px; border-radius: 999px;
-  font-size: 12px;
-}
-
-</style>
+    /* === Chip color overrides (filters & popup) === */
+    .tag-pill, .chip {
+      --chip-bg: #f8fafc;
+      --chip-border: #e1e5ee;
+      --chip-text: #111;
+      background: var(--chip-bg);
+      border: 1px solid var(--chip-border);
+      color: var(--chip-text);
+    }
+  </style>
 </head>
 <body>
   <div id="navbar-include"></div>
@@ -159,6 +156,15 @@
         <div class="legend-title">Filters</div>
         <button class="legend-close-btn" type="button" id="legendClose">Close</button>
       </div>
+      
+      <div class="dataset-select-container">
+        <label for="datasetSelect" class="dataset-select-label">Data Source</label>
+        <select id="datasetSelect" class="form-select">
+          <option value="sonoma">Sonoma Disaster Data</option>
+          <option value="resource">Resource Data</option>
+        </select>
+      </div>
+
       <div class="legend-title desktop-only">Filters</div>
 
       <details id="grp-regular"><summary><span>Regular Services</span><span class="chev">▶</span></summary><div class="tag-list" id="list-regular"></div></details>
@@ -175,85 +181,94 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script>
     /* =========================================================
-       SHORT LABEL OVERRIDES (CONFIG SECTION)
-       ---------------------------------------------------------
-       Use this to substitute shorter labels for long tag values
-       detected in the GeoJSON. Filtering still uses the original
-       (full) tag values under the hood, so your filters remain
-       accurate. Add/edit items as needed; leave blank to show
-       the original text.
-
-       Example:
-       const TAG_LABEL_OVERRIDES = {
-         regular: {
-           "Children & Youth Services": "Youth",
-           "Community Meals / Food Distribution": "Food"
-         },
-         disaster: {
-           "Emergency Shelter / Warming Center": "Shelter",
-         },
-         physical: {
-           "Commercial Kitchen (Use)": "Kitchen",
-         }
-       };
+       CONFIG & OVERRIDES
     ========================================================= */
+    // Map URL configs
+    const DATASETS = {
+      sonoma: {
+        url: "https://api.tbc.city/disaster/org_points.geojson",
+        label: "Sonoma Disaster Data"
+      },
+      resource: {
+        url: "https://api.tbc.city/disaster/resource_data.geojson",
+        label: "Resource Data"
+      }
+    };
+    
+    // Tag renames
     const TAG_LABEL_OVERRIDES = {
-  regular: {
-    "Faith based services, house of worship": "Worship",
-    "family programs": "Family",
-    "spirititual needs": "Spiritual",
-    "Childrens programs": "Children",
-    "Youth programs": "Youth",
-    "School or Day Care": "School/Day",
-    "Foster Care / support for families in crisis": "Foster care",
-    "Food - prepared meals": "Meals (prep)",
-    "Food - groceries distribution": "Groceries",
-    "Our Facility is available to other FBO organizations offering community services": "Facility avail.",
-    "Bilingual or multilingual support": "Bilingual",
-    "Public school support/partnership": "School partner",
-    "Disability services & support": "Disability",
-    "Senior support/services": "Seniors",
-    "Addiction recovery": "Recovery",
-    "Homeless services": "Homeless",
-    "Transportation": "Transport",
-    "Mental health services": "Mental health",
-    "Small groups for life skills develepment": "Life skills"
-  },
-  disaster: {
-    "Child Care": "Child care",
-    "Youth programming for disaster survivors": "Youth programs",
-    "Disability services & support for disaster survivors": "Disability",
-    "Food - prepared meals for disaster survivors": "Meals (prep)",
-    "Food - groceries distribution for disaster survivors": "Groceries",
-    "Senior support/services for disaster survivors": "Seniors",
-    "Transportation for disaster survivors": "Transport",
-    "Mental health services for disaster survivors": "Mental health",
-    "Our Facility is available to other FBO organizations offering disaster recovery services": "Facility avail.",
-    "Bilingual or multilingual support for disaster survivors": "Bilingual"
-  },
-  physical: {
-    "Food or Meals for disaster survivors": "Meals",
-    "Clothing and Supplies for disaster survivors": "Clothing/supplies",
-    "Donations Management: e.g. Distribution of Clothes": "Donations mgmt",
-    "etc. from our facility": "etc",
-    "Volunteers for disaster response": "Volunteers",
-    "Resource Assistance/Gift Cards to disaster survivors": "Gift cards",
-    "Phone Support": "Phone support",
-    "Cooling location": "Cooling",
-    "Warming location": "Warming",
-    "Sleeping area": "Sleeping",
-    "Public Restrooms": "Restrooms",
-    "Device Charging Stations": "Charging",
-    "Kitchen use": "Kitchen",
-    "Refrigeration": "Fridge",
-    "Shelter": "Shelter",
-    "Showers": "Showers",
-    "Generator(s)": "Generator",
-    "Vehicle: Van or Bus": "Van/Bus"
-  }
-};
+      regular: {
+        "Faith based services, house of worship": "Worship",
+        "family programs": "Family",
+        "spirititual needs": "Spiritual",
+        "Childrens programs": "Children",
+        "Childrens": "Children",
+        "Youth programs": "Youth",
+        "Youth": "Youth",
+        "School or Day Care": "School/Day",
+        "Foster Care / support for families in crisis": "Foster care",
+        "Foster Care / Support for families in crisis": "Foster care",
+        "Food - prepared meals": "Meals (prep)",
+        "Food - groceries distribution": "Groceries",
+        "Our Facility is available to other FBO organizations offering community services": "Facility avail.",
+        "Bilingual or multilingual support": "Bilingual",
+        "Bilingual / Multilingual service": "Bilingual",
+        "Public school support/partnership": "School partner",
+        "Public School Support / Partnership": "School partner",
+        "Disability services & support": "Disability",
+        "Disability Services & Support": "Disability",
+        "Senior support/services": "Seniors",
+        "Senior support / services": "Seniors",
+        "Addiction recovery": "Recovery",
+        "Homeless services": "Homeless",
+        "Transportation": "Transport",
+        "Mental health services": "Mental health",
+        "Mental Health services": "Mental health",
+        "Small groups for life skills develepment": "Life skills"
+      },
+      disaster: {
+        "Child Care": "Child care",
+        "Child care for disaster survivors": "Child care",
+        "Youth programming for disaster survivors": "Youth programs",
+        "Disability services & support for disaster survivors": "Disability",
+        "Food - prepared meals for disaster survivors": "Meals (prep)",
+        "Food - groceries distribution for disaster survivors": "Groceries",
+        "Senior support/services for disaster survivors": "Seniors",
+        "Transportation for disaster survivors": "Transport",
+        "Mental health services for disaster survivors": "Mental health",
+        "Our Facility is available to other FBO organizations offering disaster recovery services": "Facility avail.",
+        "Our Facility is available to other organizations offering disaster recovery services": "Facility avail.",
+        "Bilingual or multilingual support for disaster survivors": "Bilingual",
+        "Resource Assistance / Gift Cards to disaster survivors": "Gift cards",
+        "Clothing and Supplies for disaster survivors": "Clothing/supplies"
+      },
+      physical: {
+        "Food or Meals for disaster survivors": "Meals",
+        "Clothing and Supplies for disaster survivors": "Clothing/supplies",
+        "Donations Management: e.g. Distribution of Clothes": "Donations mgmt",
+        "Donations Management - Distribution of Clothes / Food / Water": "Donations mgmt",
+        "etc. from our facility": "etc",
+        "Volunteers for disaster response": "Volunteers",
+        "Resource Assistance/Gift Cards to disaster survivors": "Gift cards",
+        "Phone Support": "Phone support",
+        "Cooling location": "Cooling",
+        "Warming location": "Warming",
+        "Sleeping area": "Sleeping",
+        "Public Restrooms": "Restrooms",
+        "Device Charging Stations": "Charging",
+        "Kitchen use": "Kitchen",
+        "Refrigeration": "Fridge",
+        "Shelter": "Shelter",
+        "Showers": "Showers",
+        "Generator(s)": "Generator",
+        "Vehicle: Van or Bus": "Van/Bus",
+        "Our facility is available to other organizations offering community services": "Facility avail."
+      }
+    };
 
-    // Basemaps
+    // =========================================================
+    // MAP INIT
+    // =========================================================
     const esriGray = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', { maxZoom: 20, attribution: 'Tiles &copy; Esri' });
     const cartoPositron = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { maxZoom: 20, subdomains: 'abcd', attribution: '&copy; OpenStreetMap contributors &copy; CARTO' });
     const esriWorldStreet = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', { maxZoom: 20, attribution: 'Tiles &copy; Esri' });
@@ -264,7 +279,7 @@
       zoom: 9,
       layers: [esriGray],
       preferCanvas: true,
-      zoomControl: false // move zoom away from legend
+      zoomControl: false 
     });
     L.control.zoom({ position: 'bottomright' }).addTo(map);
 
@@ -274,27 +289,57 @@
     const baseList = controlEl.querySelector('.leaflet-control-layers-base');
     if (baseList) { const h = document.createElement('div'); h.className = 'basemap-heading'; h.textContent = 'Basemap'; baseList.prepend(h); }
 
-    const GEOJSON_URL = "https://api.tbc.city/disaster/org_points.geojson";
+    // =========================================================
+    // APP STATE
+    // =========================================================
+    let currentDatasetKey = 'sonoma';
     let allFeatures = [];
-    let FIELDS = {};
-    const el = (s) => document.querySelector(s);
+    let FIELDS = {}; 
+    const markersLayer = L.layerGroup().addTo(map);
 
+    // =========================================================
+    // UTILITIES
+    // =========================================================
+    const el = (s) => document.querySelector(s);
     const normKey = (s) => String(s||'').toLowerCase().replace(/[\s._-]+/g,'').replace(/[^\p{L}\p{N}]/gu,'');
+    
+    // Updated field resolver to handle both datasets
     function resolveFieldsFromSample(props) {
       const keys = Object.keys(props||{});
       const byNorm = new Map(keys.map(k => [normKey(k), k]));
-      const pick = (...c) => { for (const cand of c) { const k = normKey(cand); if (byNorm.has(k)) return byNorm.get(k); } for (const [nk, orig] of byNorm.entries()) if (c.some(cand => nk.includes(normKey(cand)))) return orig; return null; };
+      const pick = (...c) => { 
+        for (const cand of c) { const k = normKey(cand); if (byNorm.has(k)) return byNorm.get(k); } 
+        return null; 
+      };
+
       return {
-        name: pick("Organization Name","Org Name","Name"),
-        website: pick("Website","URL","Link"),
-        type: pick("Organization Type","Type","Category"),
-        address: pick("Full Address","Address"),
-        contact: pick("Disaster Contact","Contact","DisasterContact"),
-        email: pick("Disaster Email","Email","E-mail"),
-        phone: pick("Disaster Phone","Phone","Telephone"),
-        regular: pick("Regular Services","RegularServices"),
-        disaster: pick("Disaster Services","DisasterServices"),
-        physical: pick("Physical Resources","PhysicalResources","Resources"),
+        name: pick("Organization Name","organization_name","Org Name"),
+        website: pick("Website","website","URL"),
+        type: pick("Organization Type","organization_type","Type"),
+        address: pick("Full Address","full_address","Address"),
+        
+        // Standard Contact (Sonoma)
+        contact: pick("Disaster Contact","disaster_contact"),
+        email: pick("Disaster Email","disaster_email"),
+        phone: pick("Disaster Phone","disaster_phone"),
+        
+        // Resource Data Specifics
+        org_leader: pick("org_leader"),
+        org_leader_email: pick("org_leader_email"),
+        org_leader_phone: pick("org_leader_phone"),
+        
+        compassion_leader: pick("compassion_leader"),
+        compassion_leader_email: pick("compassion_leader_email"),
+        compassion_leader_phone: pick("compassion_leader_phone"),
+        
+        org_size: pick("org_size", "Size"),
+        other_resources: pick("other_resources", "Other Resources"),
+        last_update: pick("last_update", "Timestamp"),
+
+        // Arrays
+        regular: pick("Regular Services","regular_services"),
+        disaster: pick("Disaster Services","disaster_services"),
+        physical: pick("Physical Resources","physical_resources"),
       };
     }
 
@@ -303,116 +348,146 @@
 
     function labelFor(groupKey, tag) {
       const overrides = TAG_LABEL_OVERRIDES[groupKey] || {};
-      return overrides[tag] || tag; // default to original if no override
+      return overrides[tag] || tag;
     }
 
-    
-function buildTagList(container, tags, groupKey) {
-  container.innerHTML = "";
-  tags.forEach(tag => {
-    const id = `${groupKey}-${tag.replace(/\s+/g, "_")}`;
-    const label = document.createElement('label');
-    label.className = 'tag-pill';
-    label.setAttribute('for', id);
-    label.title = tag; // full original
-
-    const input = document.createElement('input');
-    input.type = 'checkbox';
-    input.id = id;
-    input.value = tag;               // full value for filtering
-    input.dataset.group = groupKey;
-
-    const span = document.createElement('span');
-    span.textContent = labelFor(groupKey, tag); // short label
-
-    // Apply color based on category + tag
-    const c = colorForTag(groupKey, tag);
-    label.style.setProperty('--chip-bg', c.bg);
-    label.style.setProperty('--chip-border', c.border);
-    label.style.setProperty('--chip-text', c.text);
-
-    label.appendChild(input);
-    label.appendChild(span);
-    container.appendChild(label);
-  });
-}
-
-
-
-    function getSelected(groupKey) { return Array.from(document.querySelectorAll(`input[type="checkbox"][data-group="${groupKey}"]:checked`)).map(i => i.value); }
-
-    function featureMatchesSelections(f, sel) {
-      const p = f.properties || {};
-      const reg = normalizeTags(p[FIELDS.regular]);
-      const dis = normalizeTags(p[FIELDS.disaster]);
-      const phy = normalizeTags(p[FIELDS.physical]);
-      if (sel.regular.length && !sel.regular.some(t => reg.includes(t))) return false;
-      if (sel.disaster.length && !sel.disaster.some(t => dis.includes(t))) return false;
-      if (sel.physical.length && !sel.physical.some(t => phy.includes(t))) return false;
-      return true;
+    function buildTagList(container, tags, groupKey) {
+      container.innerHTML = "";
+      tags.forEach(tag => {
+        const id = `${groupKey}-${tag.replace(/\s+/g, "_")}`;
+        const label = document.createElement('label');
+        label.className = 'tag-pill';
+        label.setAttribute('for', id);
+        label.title = tag;
+        const input = document.createElement('input');
+        input.type = 'checkbox';
+        input.id = id;
+        input.value = tag;
+        input.dataset.group = groupKey;
+        const span = document.createElement('span');
+        span.textContent = labelFor(groupKey, tag);
+        const c = colorForTag(groupKey, tag);
+        label.style.setProperty('--chip-bg', c.bg);
+        label.style.setProperty('--chip-border', c.border);
+        label.style.setProperty('--chip-text', c.text);
+        label.appendChild(input);
+        label.appendChild(span);
+        container.appendChild(label);
+      });
     }
 
+    // Coloring
     const PALETTE30 = ['#1f77b4','#ff7f0e','#2ca02c','#d62728','#9467bd','#8c564b','#e377c2','#7f7f7f','#bcbd22','#17becf','#393b79','#637939','#8c6d31','#843c39','#7b4173','#3182bd','#31a354','#756bb1','#636363','#e6550d','#9edae5','#c7c7c7','#bc80bd','#ffed6f','#a6cee3','#b2df8a','#fb9a99','#fdbf6f','#cab2d6','#6a3d9a'];
     function hashIndex(str, m){ let h=0; for(let i=0;i<str.length;i++) h=(h*31 + str.charCodeAt(i))|0; return Math.abs(h)%m; }
+    function hexToRgba(hex, alpha) {
+      const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+      if (!m) return `rgba(0,0,0,${alpha})`;
+      const r = parseInt(m[1], 16), g = parseInt(m[2], 16), b = parseInt(m[3], 16);
+      return `rgba(${r},${g},${b},${alpha})`;
+    }
+    function colorForTag(groupKey, tag) {
+      const key = `${groupKey}|${tag}`;
+      const base = PALETTE30[ hashIndex(key, PALETTE30.length) ];
+      return { bg: hexToRgba(base, 0.15), border: base, text: "#111" };
+    }
+    function colorForFeature(props) { const key = `${props[FIELDS.name]||''}|${props[FIELDS.address]||''}`; return PALETTE30[ hashIndex(key, PALETTE30.length) ]; }
+
+    // =========================================================
+    // POPUP LOGIC
+    // =========================================================
     
-function hexToRgba(hex, alpha) {
-  const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  if (!m) return `rgba(0,0,0,${alpha})`;
-  const r = parseInt(m[1], 16), g = parseInt(m[2], 16), b = parseInt(m[3], 16);
-  return `rgba(${r},${g},${b},${alpha})`;
-}
-/** Stable color for a tag within a category */
-function colorForTag(groupKey, tag) {
-  const key = `${groupKey}|${tag}`;
-  const base = PALETTE30[ hashIndex(key, PALETTE30.length) ];
-  return { bg: hexToRgba(base, 0.15), border: base, text: "#111" };
-}
-function colorForFeature(props) { const key = `${props[FIELDS.name]||''}|${props[FIELDS.address]||''}`; return PALETTE30[ hashIndex(key, PALETTE30.length) ]; }
+    // Helper to join Name, Email, Phone
+    function formatContactString(props, nameKey, emailKey, phoneKey) {
+      const name = props[nameKey] || "";
+      const email = props[emailKey] || "";
+      const phone = props[phoneKey] || "";
+      
+      // If we only have IDs (like "rec...") and no actual name, it might look ugly. 
+      // But assuming the JSON has resolved names:
+      if (!name && !email && !phone) return null;
+      
+      const parts = [];
+      if (name) parts.push(name);
+      if (email) parts.push(email);
+      if (phone) parts.push(phone);
+      
+      return parts.join(", ");
+    }
 
-    
-function makePopup(props) {
-  const name = props[FIELDS.name] || "(No name)";
-  const website = props[FIELDS.website];
-  const orgType = props[FIELDS.type];
-  const address = props[FIELDS.address];
-  const contact = props[FIELDS.contact];
-  const email = props[FIELDS.email];
-  const phone = props[FIELDS.phone];
+    function makePopup(props) {
+      const name = props[FIELDS.name] || "(No name)";
+      const website = props[FIELDS.website];
+      const orgType = props[FIELDS.type];
+      const address = props[FIELDS.address];
+      
+      // Arrays
+      const reg = normalizeTags(props[FIELDS.regular]);
+      const dis = normalizeTags(props[FIELDS.disaster]);
+      const phy = normalizeTags(props[FIELDS.physical]);
 
-  const reg = normalizeTags(props[FIELDS.regular]);
-  const dis = normalizeTags(props[FIELDS.disaster]);
-  const phy = normalizeTags(props[FIELDS.physical]);
+      const chipHtml = (arr, group) => arr.map(t => {
+        const c = colorForTag(group, t);
+        const short = labelFor(group, t);
+        return '<span class="chip" title="' + t + '" style="--chip-bg:' + c.bg + ';--chip-border:' + c.border + ';--chip-text:' + c.text + '">' + short + '</span>';
+      }).join(" ");
 
-  const chipHtml = (arr, group) => arr.map(t => {
-    const c = colorForTag(group, t);
-    const short = labelFor(group, t);
-    return '<span class="chip" title="' + t +
-           '" style="--chip-bg:' + c.bg + ';--chip-border:' + c.border +
-           ';--chip-text:' + c.text + '">' + short + '</span>';
-  }).join(" ");
+      let contactInfoHtml = "";
+      let metaInfoHtml = "";
 
-  return `
-    <div class="popup">
-      <h3>${name}</h3>
-      ${website ? `<div class="field-row"><b>Website:</b> <a href="${website}" target="_blank" rel="noopener">${website}</a></div>` : ""}
-      ${orgType ? `<div class="field-row"><b>Type:</b> ${orgType}</div>` : ""}
-      ${address ? `<div class="field-row"><b>Address:</b> ${address}</div>` : ""}
-      ${contact ? `<div class="field-row"><b>Disaster Contact:</b> ${contact}</div>` : ""}
-      ${email ? `<div class="field-row"><b>Email:</b> <a href="mailto:${email}">${email}</a></div>` : ""}
-      ${phone ? `<div class="field-row"><b>Phone:</b> <a href="tel:${phone}">${phone}</a></div>` : ""}
+      // === LOGIC SWITCH BASED ON DATASET ===
+      if (currentDatasetKey === 'resource') {
+        // Resource Data Display
+        const orgLeader = formatContactString(props, FIELDS.org_leader, FIELDS.org_leader_email, FIELDS.org_leader_phone);
+        const disasterContact = formatContactString(props, FIELDS.contact, FIELDS.email, FIELDS.phone);
+        const compassionLeader = formatContactString(props, FIELDS.compassion_leader, FIELDS.compassion_leader_email, FIELDS.compassion_leader_phone);
+        const size = props[FIELDS.org_size];
+        const update = props[FIELDS.last_update];
+        
+        if (size) metaInfoHtml += `<span>Size: ${size}</span>`;
+        if (update) metaInfoHtml += ` • <span>Updated: ${new Date(update).toLocaleDateString()}</span>`;
+        
+        if (orgLeader) contactInfoHtml += `<div class="field-row"><b>Org Leader:</b> ${orgLeader}</div>`;
+        if (disasterContact) contactInfoHtml += `<div class="field-row"><b>Disaster Contact:</b> ${disasterContact}</div>`;
+        if (compassionLeader) contactInfoHtml += `<div class="field-row"><b>Compassion Leader:</b> ${compassionLeader}</div>`;
+        
+      } else {
+        // Standard Sonoma Display
+        const contact = props[FIELDS.contact];
+        const email = props[FIELDS.email];
+        const phone = props[FIELDS.phone];
+        
+        if (contact) contactInfoHtml += `<div class="field-row"><b>Disaster Contact:</b> ${contact}</div>`;
+        if (email) contactInfoHtml += `<div class="field-row"><b>Email:</b> <a href="mailto:${email}">${email}</a></div>`;
+        if (phone) contactInfoHtml += `<div class="field-row"><b>Phone:</b> <a href="tel:${phone}">${phone}</a></div>`;
+      }
 
-      ${reg.length ? `<div class="field-row"><b>Regular Services:</b><div class="tag-strip">${chipHtml(reg, 'regular')}</div></div>` : ""}
-      ${dis.length ? `<hr/><div class="field-row"><b>Disaster Services:</b><div class="tag-strip">${chipHtml(dis, 'disaster')}</div></div>` : ""}
-      ${phy.length ? `<hr/><div class="field-row"><b>Physical Resources:</b><div class="tag-strip">${chipHtml(phy, 'physical')}</div></div>` : ""}
-    </div>`;
-}
+      const otherRes = props[FIELDS.other_resources];
 
+      return `
+        <div class="popup">
+          <h3>${name}</h3>
+          ${metaInfoHtml ? `<div class="popup-meta">${metaInfoHtml}</div>` : ""}
+          
+          ${website ? `<div class="field-row"><b>Website:</b> <a href="${website.startsWith('http') ? website : 'https://'+website}" target="_blank" rel="noopener">${website}</a></div>` : ""}
+          ${orgType ? `<div class="field-row"><b>Type:</b> ${orgType}</div>` : ""}
+          ${address ? `<div class="field-row"><b>Address:</b> ${address}</div>` : ""}
+          
+          <hr style="opacity:0.5; margin:6px 0;">
+          ${contactInfoHtml}
 
+          ${reg.length ? `<div class="field-row"><b>Regular Services:</b><div class="tag-strip">${chipHtml(reg, 'regular')}</div></div>` : ""}
+          ${dis.length ? `<hr/><div class="field-row"><b>Disaster Services:</b><div class="tag-strip">${chipHtml(dis, 'disaster')}</div></div>` : ""}
+          ${phy.length ? `<hr/><div class="field-row"><b>Physical Resources:</b><div class="tag-strip">${chipHtml(phy, 'physical')}</div></div>` : ""}
+          
+          ${otherRes ? `<hr/><div class="field-row"><b>Other Resources:</b><div style="font-size:12px;margin-top:2px;">${otherRes}</div></div>` : ""}
+        </div>`;
+    }
 
-    const markersLayer = L.layerGroup().addTo(map);
-    function clearMarkers(){ markersLayer.clearLayers(); }
+    // =========================================================
+    // RENDERING & FILTERING
+    // =========================================================
     function drawMarkers(features) {
-      clearMarkers();
+      markersLayer.clearLayers();
       const pts = [];
       features.forEach(f => {
         const [lng, lat] = f.geometry?.coordinates || [];
@@ -427,6 +502,19 @@ function makePopup(props) {
       if (pts.length) map.fitBounds(L.latLngBounds(pts).pad(0.08));
     }
 
+    function getSelected(groupKey) { return Array.from(document.querySelectorAll(`input[type="checkbox"][data-group="${groupKey}"]:checked`)).map(i => i.value); }
+    
+    function featureMatchesSelections(f, sel) {
+      const p = f.properties || {};
+      const reg = normalizeTags(p[FIELDS.regular]);
+      const dis = normalizeTags(p[FIELDS.disaster]);
+      const phy = normalizeTags(p[FIELDS.physical]);
+      if (sel.regular.length && !sel.regular.some(t => reg.includes(t))) return false;
+      if (sel.disaster.length && !sel.disaster.some(t => dis.includes(t))) return false;
+      if (sel.physical.length && !sel.physical.some(t => phy.includes(t))) return false;
+      return true;
+    }
+
     function applyFilters() {
       const selections = { regular: getSelected("regular"), disaster: getSelected("disaster"), physical: getSelected("physical") };
       drawMarkers(allFeatures.filter(f => featureMatchesSelections(f, selections)));
@@ -435,27 +523,59 @@ function makePopup(props) {
     function clearFilters() { document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false); applyFilters(); }
     function collapseAllSections() { document.querySelectorAll('#legendPanel details[open]').forEach(d => d.removeAttribute('open')); }
 
-    fetch(GEOJSON_URL, { cache: 'no-cache' })
-      .then(r => r.json())
-      .then(data => {
-        const features = Array.isArray(data?.features) ? data.features : [];
-        allFeatures = features;
-        if (!features.length) return;
+    // =========================================================
+    // LOAD DATA
+    // =========================================================
+    function loadData(key) {
+      const cfg = DATASETS[key];
+      if (!cfg) return;
+      
+      currentDatasetKey = key;
+      markersLayer.clearLayers();
+      allFeatures = [];
+      
+      // Reset filter HTML
+      el("#list-regular").innerHTML = "Loading...";
+      el("#list-disaster").innerHTML = "";
+      el("#list-physical").innerHTML = "";
 
-        FIELDS = resolveFieldsFromSample(features[0]?.properties || {});
-        const regTags = uniqueSortedTags(features, FIELDS.regular);
-        const disTags = uniqueSortedTags(features, FIELDS.disaster);
-        const phyTags = uniqueSortedTags(features, FIELDS.physical);
-        buildTagList(el("#list-regular"), regTags, "regular");
-        buildTagList(el("#list-disaster"), disTags, "disaster");
-        buildTagList(el("#list-physical"), phyTags, "physical");
+      fetch(cfg.url, { cache: 'no-cache' })
+        .then(r => r.json())
+        .then(data => {
+          const features = Array.isArray(data?.features) ? data.features : [];
+          allFeatures = features;
+          if (!features.length) {
+            el("#list-regular").innerHTML = "No data found.";
+            return;
+          }
 
-        drawMarkers(allFeatures);
-      })
-      .catch(err => { console.error("Failed to load GeoJSON:", err); alert("Failed to load disaster org data."); });
+          // Re-detect fields based on the new data
+          FIELDS = resolveFieldsFromSample(features[0]?.properties || {});
+          
+          const regTags = uniqueSortedTags(features, FIELDS.regular);
+          const disTags = uniqueSortedTags(features, FIELDS.disaster);
+          const phyTags = uniqueSortedTags(features, FIELDS.physical);
+          
+          buildTagList(el("#list-regular"), regTags, "regular");
+          buildTagList(el("#list-disaster"), disTags, "disaster");
+          buildTagList(el("#list-physical"), phyTags, "physical");
 
+          drawMarkers(allFeatures);
+        })
+        .catch(err => { 
+          console.error("Failed to load GeoJSON:", err); 
+          el("#list-regular").textContent = "Failed to load data.";
+        });
+    }
+
+    // Init
+    const dsSelect = el("#datasetSelect");
+    dsSelect.addEventListener("change", (e) => loadData(e.target.value));
     el("#applyFilters").addEventListener("click", applyFilters);
     el("#clearFilters").addEventListener("click", clearFilters);
+
+    // Initial load
+    loadData('sonoma');
 
     // Legend interactions
     const legendPanel = document.getElementById('legendPanel');
